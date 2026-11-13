@@ -4,7 +4,9 @@ import { DataSet } from 'vis-data';
 import { Timeline, type DataItem } from 'vis-timeline';
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
 import './style.css';
-import { addDays, editRange, isWeekend, scheduleRange, sizeDays, startOfDay, type DateRange } from './calendar';
+import { addDays, editRange, scheduleRange, sizeDays, startOfDay, type DateRange } from './calendar';
+
+import { axisFor, axisForSpan, calendarViews, windowFor, zoomMax, zoomMin, type CalendarView } from './calendarViews';
 
 type RoadmapItem = {
   id: string;
@@ -30,25 +32,19 @@ function App() {
   const timelineItems = useRef<DataSet<DataItem> | null>(null);
   const draggedId = useRef<string | null>(null);
   const [roadmapItems, setRoadmapItems] = useState(initialItems);
+  const contextDate = useRef(new Date());
+  const axisView = useRef<CalendarView>('Month');
+  const [selectedView, setSelectedView] = useState<CalendarView | null>('Month');
   const [includeWeekends, setIncludeWeekends] = useState(false);
 
   useEffect(() => {
-    const start = startOfDay(new Date());
-    const end = addDays(start, 28);
+    const initialWindow = windowFor('Month', contextDate.current);
     const items = new DataSet<DataItem>();
-    for (let day = start; day < end; day = addDays(day, 1)) {
-      if (isWeekend(day)) {
-        items.add({
-          type: 'background', content: '', start: day, end: addDays(day, 1),
-          className: 'roadmap-weekend', editable: false,
-        });
-      }
-    }
     timelineItems.current = items;
     const groups = initialItems.map(({ id, content, size }) => ({ id, content: `${content} (${size})` }));
     const view = new Timeline(container.current!, items, groups, {
-      start,
-      end,
+      ...initialWindow,
+      ...axisFor('Month'),
       orientation: 'top',
       margin: { axis: 4, item: 4 },
       editable: { updateTime: true, updateGroup: false, add: false, remove: false },
@@ -68,8 +64,14 @@ function App() {
           entry.id === id ? { ...entry, ...range } : entry,
         ));
       },
-      moveable: false,
-      zoomable: false,
+      moveable: true,
+      zoomable: true,
+      zoomKey: 'ctrlKey',
+      zoomMin,
+      zoomMax,
+      verticalScroll: true,
+      horizontalScroll: true,
+      maxHeight: 420,
       showCurrentTime: false,
       groupTemplate(group) {
         const label = document.createElement('div');
@@ -93,6 +95,42 @@ function App() {
       },
     });
     timeline.current = view;
+
+    let shaded = new Set<string>();
+    function shadeWeekends(start: Date, end: Date) {
+      let saturday = startOfDay(addDays(start, -15));
+      saturday = addDays(saturday, (6 - saturday.getDay() + 7) % 7);
+      const bufferEnd = addDays(end, 14);
+      const next = new Set<string>();
+      const additions: DataItem[] = [];
+      for (; saturday < bufferEnd; saturday = addDays(saturday, 7)) {
+        const id = `weekend-${saturday.getTime()}`;
+        next.add(id);
+        if (!shaded.has(id)) {
+          additions.push({
+            id, type: 'background', content: '', start: saturday, end: addDays(saturday, 2),
+            className: 'roadmap-weekend', editable: false,
+          });
+        }
+      }
+      items.remove([...shaded].filter((id) => !next.has(id)));
+      items.add(additions);
+      shaded = next;
+    }
+
+    shadeWeekends(initialWindow.start, initialWindow.end);
+    view.on('rangechanged', ({ start, end, byUser }: DateRange & { byUser: boolean }) => {
+      shadeWeekends(start, end);
+      if (!byUser) return;
+
+      contextDate.current = new Date((start.getTime() + end.getTime()) / 2);
+      setSelectedView(null);
+      const viewForSpan = axisForSpan(end.getTime() - start.getTime());
+      if (viewForSpan !== axisView.current) {
+        axisView.current = viewForSpan;
+        view.setOptions(axisFor(viewForSpan));
+      }
+    });
 
     return () => {
       view.destroy();
@@ -124,6 +162,16 @@ function App() {
     );
     timelineItems.current?.update(bars);
   }, [roadmapItems]);
+
+  function selectView(preset: CalendarView) {
+    const view = timeline.current;
+    if (!view) return;
+    const { start, end } = windowFor(preset, contextDate.current);
+    axisView.current = preset;
+    view.setOptions(axisFor(preset));
+    view.setWindow(start, end, { animation: false });
+    setSelectedView(preset);
+  }
 
   function getDropTime(event: DragEvent<HTMLDivElement>, id: string) {
     if (roadmapItems.some((item) => item.id === id && item.start)) return;
@@ -159,6 +207,13 @@ function App() {
     <main>
       <h1>Roadmap Tool</h1>
       <p>Drag an unscheduled item onto its own row. Drag a bar to move it or drag either edge to resize it.</p>
+      <div role="group" aria-label="Calendar view">
+        {calendarViews.map((preset) => (
+          <button key={preset} type="button" aria-pressed={selectedView === preset} onClick={() => selectView(preset)}>
+            {preset}
+          </button>
+        ))}
+      </div>
       <label>
         <input type="checkbox" checked={includeWeekends} onChange={(event) => setIncludeWeekends(event.target.checked)} />
         Count weekends toward duration

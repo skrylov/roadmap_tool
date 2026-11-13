@@ -23,3 +23,11 @@ body {
   background-color: rgba(65, 77, 94, 0.1);
   pointer-events: none;
 }
+
+[aria-label="Calendar view"] button[aria-pressed="true"] {
+  font-weight: bold;
+}
+
+.vis-time-axis .vis-grid.vis-monday {
+  border-left-color: #a8adb5;
+}

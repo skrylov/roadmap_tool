@@ -18,3 +18,8 @@ body {
   text-align: left;
   cursor: grab;
 }
+
+.vis-item.vis-background.roadmap-weekend {
+  background-color: rgba(65, 77, 94, 0.1);
+  pointer-events: none;
+}

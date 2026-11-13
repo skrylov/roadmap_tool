@@ -4,15 +4,24 @@ import { DataSet } from 'vis-data';
 import { Timeline, type DataItem } from 'vis-timeline';
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
 import './style.css';
+import { addDays, editRange, isWeekend, scheduleRange, sizeDays, startOfDay, type DateRange } from './calendar';
 
-const roadmapItems = [
-  { id: 'onboarding', content: 'Improve onboarding' },
-  { id: 'search', content: 'Add search filters' },
-  { id: 'reporting', content: 'Update reporting' },
-  { id: 'billing', content: 'Simplify billing' },
+type RoadmapItem = {
+  id: string;
+  content: string;
+  size: keyof typeof sizeDays;
+  start?: Date;
+  end?: Date;
+};
+
+const initialItems: RoadmapItem[] = [
+  { id: 'onboarding', content: 'Improve onboarding', size: 'S' },
+  { id: 'search', content: 'Add search filters', size: 'M' },
+  { id: 'reporting', content: 'Update reporting', size: 'L' },
+  { id: 'billing', content: 'Simplify billing', size: 'S' },
 ];
 
-const week = 7 * 24 * 60 * 60 * 1000;
+const dateLabel = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' });
 const dragType = 'application/x-roadmap-item';
 
 function App() {
@@ -20,16 +29,26 @@ function App() {
   const timeline = useRef<Timeline | null>(null);
   const timelineItems = useRef<DataSet<DataItem> | null>(null);
   const draggedId = useRef<string | null>(null);
-  const [dates, setDates] = useState<Partial<Record<string, { start: Date; end: Date }>>>({});
+  const [roadmapItems, setRoadmapItems] = useState(initialItems);
+  const [includeWeekends, setIncludeWeekends] = useState(false);
 
   useEffect(() => {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
+    const start = startOfDay(new Date());
+    const end = addDays(start, 28);
     const items = new DataSet<DataItem>();
+    for (let day = start; day < end; day = addDays(day, 1)) {
+      if (isWeekend(day)) {
+        items.add({
+          type: 'background', content: '', start: day, end: addDays(day, 1),
+          className: 'roadmap-weekend', editable: false,
+        });
+      }
+    }
     timelineItems.current = items;
-    const view = new Timeline(container.current!, items, roadmapItems, {
+    const groups = initialItems.map(({ id, content, size }) => ({ id, content: `${content} (${size})` }));
+    const view = new Timeline(container.current!, items, groups, {
       start,
-      end: new Date(start.getTime() + 4 * week),
+      end,
       orientation: 'top',
       margin: { axis: 4, item: 4 },
       editable: { updateTime: true, updateGroup: false, add: false, remove: false },
@@ -42,11 +61,12 @@ function App() {
         if (typeof item.id !== 'string' || item.group !== item.id || item.end == null) return;
 
         const { id } = item;
-        const start = new Date(item.start);
-        const end = new Date(item.end);
-        if (!(start < end)) return;
+        const range: DateRange = { start: new Date(item.start), end: new Date(item.end) };
+        if (!(range.start < range.end)) return;
 
-        setDates((current) => current[id] ? { ...current, [id]: { start, end } } : current);
+        setRoadmapItems((current) => current.map((entry) =>
+          entry.id === id ? { ...entry, ...range } : entry,
+        ));
       },
       moveable: false,
       zoomable: false,
@@ -82,15 +102,31 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const bars = roadmapItems.flatMap(({ id, content }) => {
-      const range = dates[id];
-      return range ? [{ id, group: id, content, ...range }] : [];
+    timeline.current?.setOptions({
+      onMoving(item, preview) {
+        const original = timelineItems.current?.get(item.id);
+        if (!original || original.end == null || item.end == null) return preview(null);
+
+        // vis-timeline changes both endpoints for a move, and one for a resize.
+        const range = editRange(
+          { start: new Date(original.start), end: new Date(original.end) },
+          { start: new Date(item.start), end: new Date(item.end) },
+          includeWeekends,
+        );
+        preview({ ...item, ...range });
+      },
     });
+  }, [includeWeekends]);
+
+  useEffect(() => {
+    const bars = roadmapItems.flatMap(({ id, content, start, end }) =>
+      start && end ? [{ id, group: id, content, start, end }] : [],
+    );
     timelineItems.current?.update(bars);
-  }, [dates]);
+  }, [roadmapItems]);
 
   function getDropTime(event: DragEvent<HTMLDivElement>, id: string) {
-    if (dates[id]) return;
+    if (roadmapItems.some((item) => item.id === id && item.start)) return;
     const point = timeline.current?.getEventProperties(event.nativeEvent);
     if (point && String(point.group) === id && point.what === 'background') return point.time;
   }
@@ -110,22 +146,36 @@ function App() {
     event.preventDefault();
     event.stopPropagation();
 
-    const start = getDropTime(event, id);
-    if (!start) return;
-    const end = new Date(start.getTime() + week);
-    setDates((current) => current[id] ? current : { ...current, [id]: { start, end } });
+    const dropTime = getDropTime(event, id);
+    if (!dropTime) return;
+    setRoadmapItems((current) => current.map((item) =>
+      item.id === id && !item.start
+        ? { ...item, ...scheduleRange(dropTime, sizeDays[item.size], includeWeekends) }
+        : item,
+    ));
   }
 
   return (
     <main>
       <h1>Roadmap Tool</h1>
       <p>Drag an unscheduled item onto its own row. Drag a bar to move it or drag either edge to resize it.</p>
+      <label>
+        <input type="checkbox" checked={includeWeekends} onChange={(event) => setIncludeWeekends(event.target.checked)} />
+        Count weekends toward duration
+      </label>
       <div
         ref={container}
         aria-label="Roadmap timeline"
         onDragOverCapture={allowDrop}
         onDropCapture={scheduleItem}
       />
+      <ul aria-label="Scheduled dates">
+        {roadmapItems.map(({ id, content, start, end }) => (
+          <li key={id}>
+            {content} · {start && end ? `${dateLabel.format(start)} → ${dateLabel.format(end)} ready` : 'Unscheduled'}
+          </li>
+        ))}
+      </ul>
     </main>
   );
 }

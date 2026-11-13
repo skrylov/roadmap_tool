@@ -69,8 +69,13 @@ export function useDragPreview(host: RefObject<HTMLDivElement | null>, items: Ro
     const elapsed = Math.min(32, now - (lastTick.current ?? now - 16));
     lastTick.current = now;
     const step = Math.max(1, Math.round(speed * speed * maxSpeed * elapsed / 1000));
-    // The library mirrors scrolling of this sidebar panel onto the timeline rows.
-    scroller.scrollTop = before + Math.sign(speed) * step;
+    // Route through the same handler as ordinary row scrolling. Writing the sidebar's
+    // scrollTop directly can be reverted by the opposite panel's pending scroll event.
+    host.current?.querySelector('.vis-panel.vis-center')?.dispatchEvent(new WheelEvent('wheel', {
+      deltaY: Math.sign(speed) * step,
+      bubbles: true,
+      cancelable: true,
+    }));
     frame.current = requestAnimationFrame(tick);
   }
 
@@ -97,7 +102,10 @@ export function useDragPreview(host: RefObject<HTMLDivElement | null>, items: Ro
 
   useEffect(() => {
     function preventPageScroll(event: WheelEvent) {
-      if (point.current?.canScroll) event.preventDefault();
+      if (event.isTrusted && point.current?.canScroll) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
     }
     window.addEventListener('wheel', preventPageScroll, { capture: true, passive: false });
     return () => {

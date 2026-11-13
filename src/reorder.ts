@@ -19,9 +19,9 @@ export function reorderItem(items: RoadmapItem[], id: string, destination: Desti
   });
 }
 
-export type Insertion = Destination & { top: number; headerHeight?: number };
+export type Insertion = Destination & { top: number; headerHeight?: number; rowId?: string; before?: boolean };
 
-export function findInsertion(host: HTMLElement, items: RoadmapItem[], id: string, x: number, y: number): Insertion | null {
+export function findInsertion(host: HTMLElement, items: RoadmapItem[], id: string, x: number, y: number, previous?: Insertion | null): Insertion | null {
   const frame = host.getBoundingClientRect();
   const panel = host.querySelector('.vis-panel.vis-center')?.getBoundingClientRect();
   if (!panel || x < frame.left || x >= frame.right || y < panel.top || y >= panel.bottom) return null;
@@ -52,14 +52,15 @@ export function findInsertion(host: HTMLElement, items: RoadmapItem[], id: strin
   const rowId = label.querySelector<HTMLElement>('.roadmap-label')?.dataset.itemId;
   const target = items.find((item) => item.id === rowId);
   if (!target || target.id === id) return null;
-  const edge = Math.min(14, bounds.height / 3);
-  const before = y < bounds.top + edge;
-  if (!before && y < bounds.bottom - edge) return null;
+  const midpoint = bounds.top + bounds.height / 2;
+  const before = previous && previous.rowId === rowId && Math.abs(y - midpoint) <= 3
+    ? Boolean(previous.before)
+    : y < midpoint;
 
   const source = items.find((item) => item.id === id);
   const index = target.order + Number(!before)
     - Number(source?.category === target.category && source.order < target.order);
   if (source?.category === target.category && source.order === index) return null;
   const top = before ? bounds.top : bounds.bottom;
-  return { category: target.category, index, top: Math.max(panel.top, Math.min(top, panel.bottom)) };
+  return { category: target.category, index, rowId, before, top: Math.max(panel.top, Math.min(top, panel.bottom)) };
 }

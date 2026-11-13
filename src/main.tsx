@@ -63,6 +63,8 @@ function App() {
           draggedId.current = String(group.id);
           event.dataTransfer.setData(dragType, draggedId.current);
           event.dataTransfer.effectAllowed = 'copy';
+          // The drop timestamp is under the cursor, so anchor the preview's left edge there.
+          event.dataTransfer.setDragImage(label, 0, Math.round(label.offsetHeight / 2));
         });
         label.addEventListener('dragend', () => {
           draggedId.current = null;

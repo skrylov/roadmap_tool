@@ -316,6 +316,8 @@ function App() {
       if (drag.mode === 'time') container.current?.classList.add('roadmap-body-dragging');
     }
     if (drag.mode === 'reorder') {
+      // Keep native vertical panning from fighting the drag's auto-scroll.
+      event.stopImmediatePropagation();
       preview.update({ id: drag.id, x: event.clientX, y: event.clientY, canScroll: true });
     }
   }

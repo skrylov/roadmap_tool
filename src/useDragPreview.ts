@@ -33,11 +33,18 @@ export function useDragPreview(host: RefObject<HTMLDivElement | null>, items: Ro
     const panel = element?.querySelector('.vis-panel.vis-center')?.getBoundingClientRect();
     const frame = element?.getBoundingClientRect();
     if (!element || !panel || !frame) return 0;
+    const fromTop = drag.y - panel.top;
+    const fromBottom = panel.bottom - drag.y;
+    const speed = Math.max(-1, Math.min(1, (fromBottom < fromTop
+      ? edgeZone - fromBottom
+      : fromTop - edgeZone) / edgeZone));
+    const nearEdge = fromTop < edgeZone || fromBottom < edgeZone;
     const inside = drag.x >= frame.left && drag.x < frame.right;
-    const near = drag.y >= panel.top - edgeZone && drag.y < panel.bottom + edgeZone;
+    // Project the preview onto the viewport while scrolling. Drop handlers still use the actual pointer.
+    const x = Math.max(frame.left, Math.min(drag.x, frame.right - 1));
     const y = Math.max(panel.top, Math.min(drag.y, panel.bottom - 1));
-    const target = inside && near && drag.canScroll
-      ? findInsertion(element, items, drag.id, drag.x, y, lastInsertion.current)
+    const target = drag.canScroll && (inside || nearEdge)
+      ? findInsertion(element, items, drag.id, x, y, lastInsertion.current)
       : null;
     lastInsertion.current = target;
     setInsertion((previous) =>
@@ -45,12 +52,7 @@ export function useDragPreview(host: RefObject<HTMLDivElement | null>, items: Ro
       previous?.top === target?.top && previous?.headerHeight === target?.headerHeight
         ? previous : target,
     );
-    if (!inside || !near || !drag.canScroll) return 0;
-    const fromTop = drag.y - panel.top;
-    const fromBottom = panel.bottom - drag.y;
-    if (fromTop < edgeZone) return -Math.min(1, (edgeZone - fromTop) / edgeZone);
-    if (fromBottom < edgeZone) return Math.min(1, (edgeZone - fromBottom) / edgeZone);
-    return 0;
+    return drag.canScroll && nearEdge ? speed : 0;
   }
 
   function tick(now: number) {
@@ -93,8 +95,15 @@ export function useDragPreview(host: RefObject<HTMLDivElement | null>, items: Ro
     stopScroll();
   }
 
-  useEffect(() => () => {
-    if (frame.current !== null) cancelAnimationFrame(frame.current);
+  useEffect(() => {
+    function preventPageScroll(event: WheelEvent) {
+      if (point.current?.canScroll) event.preventDefault();
+    }
+    window.addEventListener('wheel', preventPageScroll, { capture: true, passive: false });
+    return () => {
+      window.removeEventListener('wheel', preventPageScroll, true);
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+    };
   }, []);
 
   return { ghost, ghostElement, point, insertion, scrolling, update, end, lastInsertion };

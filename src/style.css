@@ -55,3 +55,23 @@ body {
 .vis-label.vis-nesting-group:has(.roadmap-category)::before {
   display: none;
 }
+
+.roadmap-insertion {
+  position: fixed;
+  z-index: 10;
+  border-top: 2px solid #245cb1;
+  pointer-events: none;
+}
+
+.roadmap-insertion span {
+  float: right;
+  padding: 2px 8px;
+  background: #245cb1;
+  color: white;
+  font-size: 13px;
+}
+
+.roadmap-insertion-collapsed {
+  box-sizing: border-box;
+  background: rgba(36, 92, 177, 0.16);
+}

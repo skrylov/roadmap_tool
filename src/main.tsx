@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Timeline } from 'vis-timeline/standalone';
+import { DataSet } from 'vis-data';
+import { Timeline, type DataItem } from 'vis-timeline';
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
 import './style.css';
 
@@ -17,19 +18,36 @@ const dragType = 'application/x-roadmap-item';
 function App() {
   const container = useRef<HTMLDivElement>(null);
   const timeline = useRef<Timeline | null>(null);
+  const timelineItems = useRef<DataSet<DataItem> | null>(null);
   const draggedId = useRef<string | null>(null);
   const [dates, setDates] = useState<Partial<Record<string, { start: Date; end: Date }>>>({});
 
   useEffect(() => {
     const start = new Date();
     start.setHours(0, 0, 0, 0);
-    const view = new Timeline(container.current!, [], roadmapItems, {
+    const items = new DataSet<DataItem>();
+    timelineItems.current = items;
+    const view = new Timeline(container.current!, items, roadmapItems, {
       start,
       end: new Date(start.getTime() + 4 * week),
       orientation: 'top',
       margin: { axis: 4, item: 4 },
-      editable: false,
-      selectable: false,
+      editable: { updateTime: true, updateGroup: false, add: false, remove: false },
+      selectable: true,
+      itemsAlwaysDraggable: { item: true, range: true },
+      snap: null,
+      onMove(item, complete) {
+        // Commit through React so the dataset only mirrors accepted date ranges.
+        complete(null);
+        if (typeof item.id !== 'string' || item.group !== item.id || item.end == null) return;
+
+        const { id } = item;
+        const start = new Date(item.start);
+        const end = new Date(item.end);
+        if (!(start < end)) return;
+
+        setDates((current) => current[id] ? { ...current, [id]: { start, end } } : current);
+      },
       moveable: false,
       zoomable: false,
       showCurrentTime: false,
@@ -45,6 +63,8 @@ function App() {
           draggedId.current = String(group.id);
           event.dataTransfer.setData(dragType, draggedId.current);
           event.dataTransfer.effectAllowed = 'copy';
+          // The drop timestamp is under the cursor, so anchor the preview's left edge there.
+          event.dataTransfer.setDragImage(label, 0, Math.round(label.offsetHeight / 2));
         });
         label.addEventListener('dragend', () => {
           draggedId.current = null;
@@ -57,6 +77,7 @@ function App() {
     return () => {
       view.destroy();
       timeline.current = null;
+      timelineItems.current = null;
     };
   }, []);
 
@@ -65,7 +86,7 @@ function App() {
       const range = dates[id];
       return range ? [{ id, group: id, content, ...range }] : [];
     });
-    timeline.current?.setItems(bars);
+    timelineItems.current?.update(bars);
   }, [dates]);
 
   function getDropTime(event: DragEvent<HTMLDivElement>, id: string) {
@@ -98,7 +119,7 @@ function App() {
   return (
     <main>
       <h1>Roadmap Tool</h1>
-      <p>Drag an unscheduled item from the left onto its own timeline row.</p>
+      <p>Drag an unscheduled item onto its own row. Drag a bar to move it or drag either edge to resize it.</p>
       <div
         ref={container}
         aria-label="Roadmap timeline"

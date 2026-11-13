@@ -1,7 +1,7 @@
 import { addDays, scheduleRange, sizeDays, type DateRange } from './calendar';
 
 export const categories = ['Now', 'Next', 'Later'] as const;
-type Category = (typeof categories)[number];
+export type Category = (typeof categories)[number];
 type Size = keyof typeof sizeDays;
 
 export type RoadmapItem = Partial<DateRange> & {
@@ -9,6 +9,7 @@ export type RoadmapItem = Partial<DateRange> & {
   content: string;
   size: Size;
   category: Category;
+  order: number;
 };
 
 type Fixture = [id: string, content: string, size: Size, schedule?: [offset: number, duration: number]];
@@ -48,8 +49,8 @@ const fixtures: Record<Category, Fixture[]> = {
 
 export function createPrototypeItems(monthStart: Date): RoadmapItem[] {
   return categories.flatMap((category) =>
-    fixtures[category].map(([id, content, size, schedule]) => ({
-      id, content, size, category,
+    fixtures[category].map(([id, content, size, schedule], order) => ({
+      id, content, size, category, order,
       ...(schedule && scheduleRange(addDays(monthStart, schedule[0]), schedule[1], false)),
     })),
   );

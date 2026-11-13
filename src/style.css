@@ -55,3 +55,67 @@ body {
 .vis-label.vis-nesting-group:has(.roadmap-category)::before {
   display: none;
 }
+
+.roadmap-insertion {
+  position: fixed;
+  z-index: 10;
+  top: 0;
+  height: 10px;
+  border-top: 2px solid #245cb1;
+  background: linear-gradient(rgba(36, 92, 177, 0.20), transparent);
+  transition: transform 150ms ease-out;
+  pointer-events: none;
+}
+
+.roadmap-insertion span {
+  float: right;
+  padding: 2px 8px;
+  background: #245cb1;
+  color: white;
+  font-size: 13px;
+}
+
+.roadmap-insertion-collapsed {
+  box-sizing: border-box;
+  background: rgba(36, 92, 177, 0.16);
+}
+
+.roadmap-drag-ghost {
+  position: fixed;
+  z-index: 11;
+  top: 0;
+  left: 0;
+  margin-top: -14px;
+  padding: 4px 9px;
+  border: 1px solid #245cb1;
+  border-radius: 4px;
+  background: #fff;
+  color: #1c3457;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.vis-item.vis-range[data-id],
+.vis-item.vis-range[data-id] .vis-drag-center {
+  cursor: grab;
+}
+
+.roadmap-reordering,
+.roadmap-reordering .vis-item.vis-range[data-id],
+.roadmap-reordering .vis-item.vis-range[data-id] .vis-drag-center,
+.roadmap-reordering .roadmap-label,
+.roadmap-body-dragging .vis-item.vis-range[data-id],
+.roadmap-body-dragging .vis-item.vis-range[data-id] .vis-drag-center {
+  cursor: grabbing;
+}
+
+.vis-item.vis-range[data-id] .vis-drag-left,
+.vis-item.vis-range[data-id] .vis-drag-right {
+  cursor: ew-resize;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roadmap-insertion {
+    transition: none;
+  }
+}

@@ -186,6 +186,7 @@ body {
   position: absolute;
   inset-inline: -4px;
   height: var(--board-drag-step);
+  transform: translateY(4px);
   box-sizing: border-box;
   border: 2px dashed #245cb1;
   border-radius: 4px;

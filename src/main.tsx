@@ -1,27 +1,12 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 import { DataSet } from 'vis-data';
-import { Timeline, type DataItem } from 'vis-timeline';
+import { Timeline, type DataGroup, type DataItem } from 'vis-timeline';
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
 import './style.css';
 import { addDays, editRange, scheduleRange, sizeDays, startOfDay, type DateRange } from './calendar';
-
 import { axisFor, axisForSpan, calendarViews, windowFor, zoomMax, zoomMin, type CalendarView } from './calendarViews';
-
-type RoadmapItem = {
-  id: string;
-  content: string;
-  size: keyof typeof sizeDays;
-  start?: Date;
-  end?: Date;
-};
-
-const initialItems: RoadmapItem[] = [
-  { id: 'onboarding', content: 'Improve onboarding', size: 'S' },
-  { id: 'search', content: 'Add search filters', size: 'M' },
-  { id: 'reporting', content: 'Update reporting', size: 'L' },
-  { id: 'billing', content: 'Simplify billing', size: 'S' },
-];
+import { categories, createPrototypeItems } from './prototypeItems';
 
 const dateLabel = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' });
 const dragType = 'application/x-roadmap-item';
@@ -31,8 +16,9 @@ function App() {
   const timeline = useRef<Timeline | null>(null);
   const timelineItems = useRef<DataSet<DataItem> | null>(null);
   const draggedId = useRef<string | null>(null);
-  const [roadmapItems, setRoadmapItems] = useState(initialItems);
   const contextDate = useRef(new Date());
+  const [initialItems] = useState(() => createPrototypeItems(windowFor('Month', contextDate.current).start));
+  const [roadmapItems, setRoadmapItems] = useState(initialItems);
   const axisView = useRef<CalendarView>('Month');
   const [selectedView, setSelectedView] = useState<CalendarView | null>('Month');
   const [includeWeekends, setIncludeWeekends] = useState(false);
@@ -41,10 +27,26 @@ function App() {
     const initialWindow = windowFor('Month', contextDate.current);
     const items = new DataSet<DataItem>();
     timelineItems.current = items;
-    const groups = initialItems.map(({ id, content, size }) => ({ id, content: `${content} (${size})` }));
+    const groups = new DataSet<DataGroup>(categories.flatMap((category) => {
+      const children = initialItems.filter((item) => item.category === category);
+      return [
+        {
+          id: `category-${category}`,
+          content: category,
+          nestedGroups: children.map(({ id }) => id),
+          showNested: true,
+        },
+        ...children.map(({ id, content, size }) => ({ id, content: `${content} (${size})` })),
+      ];
+    }));
     const view = new Timeline(container.current!, items, groups, {
-      ...initialWindow,
       ...axisFor('Month'),
+      onInitialDrawComplete() {
+        // Let vis-timeline finish its first draw before applying the preset window.
+        if (timeline.current === view) {
+          view.setWindow(initialWindow.start, initialWindow.end, { animation: false });
+        }
+      },
       orientation: 'top',
       margin: { axis: 4, item: 4 },
       editable: { updateTime: true, updateGroup: false, add: false, remove: false },
@@ -73,10 +75,35 @@ function App() {
       horizontalScroll: true,
       maxHeight: 420,
       showCurrentTime: false,
-      groupTemplate(group) {
+      groupTemplate(group: DataGroup) {
+        const children = group.nestedGroups;
+        if (children) {
+          const expanded = group.showNested !== false;
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'roadmap-category';
+          button.textContent = String(group.content);
+          button.setAttribute('aria-label', String(group.content));
+          button.setAttribute('aria-expanded', String(expanded));
+          // Let the button handle activation instead of the timeline's label tap handler.
+          button.addEventListener('pointerdown', (event) => event.stopPropagation());
+          button.addEventListener('click', () => {
+            groups.update([
+              { id: group.id, showNested: !expanded },
+              ...children.map((id) => ({ id, visible: !expanded })),
+            ]);
+            const replacement = container.current?.querySelector<HTMLButtonElement>(
+              `button.roadmap-category[data-category="${group.id}"]`,
+            );
+            replacement?.focus({ preventScroll: true });
+          });
+          button.dataset.category = String(group.id);
+          return button;
+        }
+
         const label = document.createElement('div');
         label.className = 'roadmap-label';
-        label.textContent = group.content;
+        label.textContent = String(group.content);
         label.draggable = true;
         // Keep the timeline's gesture handler from capturing the drag source.
         label.addEventListener('pointerdown', (event) => event.stopPropagation());
@@ -137,7 +164,7 @@ function App() {
       timeline.current = null;
       timelineItems.current = null;
     };
-  }, []);
+  }, [initialItems]);
 
   useEffect(() => {
     timeline.current?.setOptions({

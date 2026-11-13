@@ -31,3 +31,27 @@ body {
 .vis-time-axis .vis-grid.vis-monday {
   border-left-color: #a8adb5;
 }
+
+.roadmap-category {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.roadmap-category::before {
+  content: '▾';
+  display: inline-block;
+  width: 1.25em;
+}
+
+.roadmap-category[aria-expanded="false"]::before {
+  content: '▸';
+}
+
+.vis-label.vis-nesting-group:has(.roadmap-category)::before {
+  display: none;
+}

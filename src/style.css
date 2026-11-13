@@ -1,0 +1,20 @@
+body {
+  font-family: system-ui, sans-serif;
+  margin: 24px;
+}
+
+.roadmap-label {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 176px;
+  height: 42px;
+  padding: 0 8px;
+  border: 1px solid #d2d2d2;
+  border-radius: 4px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: grab;
+}

@@ -38,6 +38,8 @@ function App() {
         label.className = 'roadmap-label';
         label.textContent = group.content;
         label.draggable = true;
+        // Keep the timeline's gesture handler from capturing the drag source.
+        label.addEventListener('pointerdown', (event) => event.stopPropagation());
         label.addEventListener('dragstart', (event) => {
           if (!event.dataTransfer) return;
           draggedId.current = String(group.id);

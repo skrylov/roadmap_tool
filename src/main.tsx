@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Marker } from './MarkerEditor';
 import { ItemEditor } from './ItemEditor';
@@ -9,6 +9,7 @@ import { RoadmapTimeline } from './RoadmapTimeline';
 import { windowFor } from './calendarViews';
 import { createPrototypeItems } from './prototypeItems';
 import { reorderItem } from './reorder';
+import { loadRoadmap, saveRoadmap, writeWarning, type RoadmapSnapshot } from './persistence';
 import './style.css';
 
 type Editor = { id?: string; draft: ItemDraft; original: ItemDraft; another: boolean; session: number };
@@ -23,11 +24,37 @@ function normalizeOrder(items: RoadmapItem[]) {
 }
 
 function App() {
-  const [view, setView] = useState<'Board' | 'Timeline'>('Timeline');
-  const [boardMode, setBoardMode] = useState<BoardMode>('Detailed');
-  const [items, setItems] = useState(() => createPrototypeItems(windowFor('Month', new Date()).start));
-  const [markers, setMarkers] = useState<Marker[]>([]);
-  const [includeWeekends, setIncludeWeekends] = useState(false);
+  const [startup] = useState(() => {
+    const { snapshot, warning } = loadRoadmap();
+    const initial: RoadmapSnapshot = snapshot ?? {
+      items: createPrototypeItems(windowFor('Month', new Date()).start),
+      markers: [], includeWeekends: false, boardMode: 'Detailed', view: 'Timeline',
+    };
+    return { initial, warning };
+  });
+  const [view, setView] = useState(startup.initial.view);
+  const [boardMode, setBoardMode] = useState<BoardMode>(startup.initial.boardMode);
+  const [items, setItems] = useState(startup.initial.items);
+  const [markers, setMarkers] = useState<Marker[]>(startup.initial.markers);
+  const [includeWeekends, setIncludeWeekends] = useState(startup.initial.includeWeekends);
+  const [storageWarning, setStorageWarning] = useState(startup.warning);
+  const lastSaved = useRef(startup.initial);
+
+  useEffect(() => {
+    if (startup.warning) return;
+    const previous = lastSaved.current;
+    if (previous.items === items && previous.markers === markers && previous.includeWeekends === includeWeekends &&
+      previous.boardMode === boardMode && previous.view === view) return;
+
+    const snapshot = { items, markers, includeWeekends, boardMode, view };
+    try {
+      saveRoadmap(snapshot);
+      lastSaved.current = snapshot;
+      setStorageWarning(undefined);
+    } catch {
+      setStorageWarning(writeWarning);
+    }
+  }, [startup.warning, items, markers, includeWeekends, boardMode, view]);
 
   const [editor, setEditor] = useState<Editor | null>(null);
   const [confirmation, setConfirmation] = useState<Request | null>(null);
@@ -96,6 +123,7 @@ function App() {
   return (
     <main>
       <h1>Roadmap Tool</h1>
+      {storageWarning && <p className="editor-error" role="alert">{storageWarning}</p>}
       <div role="group" aria-label="Roadmap view">
         {(['Board', 'Timeline'] as const).map((name) => (
           <button key={name} type="button" aria-pressed={view === name} onClick={() => setView(name)}>{name}</button>

@@ -263,3 +263,7 @@ body {
     width: calc(42vw - 30px);
   }
 }
+
+[aria-label="Roadmap timeline"] .vis-center .vis-foreground > .vis-group {
+  border-bottom-color: transparent;
+}

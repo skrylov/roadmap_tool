@@ -42,6 +42,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
   const timelineGroups = useRef<DataSet<TimelineGroup> | null>(null);
   const barDrag = useRef<BarDrag | null>(null);
   const clickItem = useRef<{ id: string; x: number; y: number } | null>(null);
+  const itemTooltipsSuppressed = useRef(false);
   const draggedId = useRef<string | null>(null);
   const contextDate = useRef(new Date());
   const getInitialItems = useEffectEvent(() => roadmapItems);
@@ -51,6 +52,15 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
   const { ghost, ghostElement, point, insertion, scrolling } = preview;
   const axisView = useRef<CalendarView>('Month');
   const [selectedView, setSelectedView] = useState<CalendarView | null>('Month');
+
+  function suppressItemTooltips() {
+    if (itemTooltipsSuppressed.current) return;
+    itemTooltipsSuppressed.current = true;
+    // Native tooltips can outlive hover while vis-timeline moves or captures the pointer.
+    container.current?.querySelectorAll('[data-truncated-text][title]').forEach((text) => {
+      text.removeAttribute('title');
+    });
+  }
 
   useEffect(() => {
     const initialWindow = windowFor('Month', contextDate.current);
@@ -160,6 +170,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
           if (!event.dataTransfer) return;
           clickItem.current = null;
           draggedId.current = String(group.id);
+          suppressItemTooltips();
           event.dataTransfer.setData(dragType, draggedId.current);
           event.dataTransfer.effectAllowed = 'copyMove';
           // Keep native drop semantics and use a single, aligned in-page ghost.
@@ -170,6 +181,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
         });
         label.addEventListener('dragend', () => {
           draggedId.current = null;
+          itemTooltipsSuppressed.current = false;
           preview.end();
         });
         return label;
@@ -374,6 +386,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
     if (!drag || drag.cancelled || event.pointerId !== drag.pointerId || !(event.buttons & 1)) return;
     const dx = Math.abs(event.clientX - drag.x);
     const dy = Math.abs(event.clientY - drag.y);
+    if (Math.max(dx, dy) >= 5) suppressItemTooltips();
     if (!drag.mode && Math.max(dx, dy) >= 14) {
       drag.mode = dy > dx * 1.25 ? 'reorder' : 'time';
       if (drag.mode === 'time') container.current?.classList.add('roadmap-body-dragging');
@@ -392,6 +405,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
       const target = event.type === 'pointerup' && !drag.cancelled && drag.mode === 'reorder' && container.current
         ? previewInsertion(drag.id, event.clientX, event.clientY)
         : null;
+      itemTooltipsSuppressed.current = false;
       preview.end();
       container.current?.classList.remove('roadmap-body-dragging');
       // Wait for the library's pointer-up listener to finish its native item edit.
@@ -411,6 +425,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
     function cancelBarDrag(event: KeyboardEvent) {
       if (event.key !== 'Escape' || barDrag.current?.mode !== 'reorder') return;
       barDrag.current.cancelled = true;
+      itemTooltipsSuppressed.current = false;
       preview.end();
     }
 
@@ -470,7 +485,9 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
       <div
         ref={container}
         aria-label="Roadmap timeline"
-        onPointerOver={showTruncatedText}
+        onPointerOver={(event) => {
+          if (!itemTooltipsSuppressed.current) showTruncatedText(event);
+        }}
         onDragOverCapture={allowDrop}
         onDropCapture={scheduleItem}
         className={ghost ? 'roadmap-reordering' : undefined}

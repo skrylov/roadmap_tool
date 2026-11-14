@@ -255,10 +255,6 @@ body {
     width: max-content;
   }
 
-  #timeline-item-list .vis-nested-group > .vis-inner {
-    padding-inline-start: 8px;
-  }
-
   #timeline-item-list .roadmap-label {
     width: calc(42vw - 30px);
   }
@@ -318,8 +314,9 @@ body {
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px #272b34;
 }
 .editor-colors button:focus-visible { outline-offset: 5px; }
-.item-editor footer { border-top: 1px solid #ddd; flex-wrap: wrap; }
-.editor-primary { display: grid; justify-items: center; }
+.item-editor footer { border-top: 1px solid #ddd; flex-wrap: wrap; align-items: flex-start; }
+.editor-primary { display: grid; justify-items: center; gap: 2px; }
+.editor-primary small { font-size: 11px; color: #5c626c; }
 .editor-error, .editor-delete { color: #a32030; }
 .editor-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
@@ -337,4 +334,18 @@ main {
 .board-card[data-editor-selected]:focus-visible,
 .roadmap-label:focus-visible {
   outline-offset: 2px;
+}
+
+#timeline-item-list .vis-label.vis-nested-group.vis-group-level-unknown-but-gte1 {
+  border-inline-color: transparent;
+  border-top-color: transparent;
+}
+
+#timeline-item-list .vis-label.vis-nested-group > .vis-inner {
+  padding-inline-start: 8px;
+}
+
+#timeline-view .vis-item.vis-range.vis-selected {
+  border-color: #97b0f8;
+  background-color: #d5ddf6;
 }

@@ -423,6 +423,10 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
           #timeline-view .vis-item.vis-range[data-id="${CSS.escape(selectedItemId)}"] {
             box-shadow: var(--roadmap-selection-ring);
           }
+
+          #timeline-view .vis-item.vis-range[data-id="${CSS.escape(selectedItemId)}"] {
+            border-color: transparent;
+          }
         `}</style>
       )}
       <p>Drag between rows to reorder. Drop an unscheduled item onto its own timeline row to schedule it. Drag bars sideways to change dates or drag their edges to resize.</p>

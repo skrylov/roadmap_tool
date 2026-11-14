@@ -24,6 +24,17 @@ function nextCountedDay(date: Date, includeWeekends: boolean) {
   return day;
 }
 
+export function scheduleEndingOn(date: Date, duration: number, includeWeekends: boolean): DateRange {
+  const end = nextCountedDay(startOfDay(date), includeWeekends);
+  let start = end;
+  for (let day = 0; day < duration; day++) {
+    do {
+      start = addDays(start, -1);
+    } while (!includeWeekends && isWeekend(start));
+  }
+  return { start, end };
+}
+
 function countedDays({ start, end }: DateRange, includeWeekends: boolean) {
   let count = 0;
   for (let day = start; day < end; day = addDays(day, 1)) {

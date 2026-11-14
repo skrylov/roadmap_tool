@@ -255,10 +255,6 @@ body {
     width: max-content;
   }
 
-  #timeline-item-list .vis-nested-group > .vis-inner {
-    padding-inline-start: 8px;
-  }
-
   #timeline-item-list .roadmap-label {
     width: calc(42vw - 30px);
   }
@@ -266,4 +262,90 @@ body {
 
 [aria-label="Roadmap timeline"] .vis-center .vis-foreground > .vis-group {
   border-bottom-color: transparent;
+}
+
+.item-editor {
+  position: fixed;
+  z-index: 30;
+  right: 12px;
+  bottom: 12px;
+  width: min(412px, 100vw - 24px);
+  box-sizing: border-box;
+  border: 1px solid #c9ccd2;
+  border-radius: 8px;
+  background: #fff;
+  color: #20242b;
+  box-shadow: 0 8px 28px #0003;
+}
+
+.item-editor header, .item-editor footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.item-editor header {
+  border-radius: 7px 7px 0 0;
+  cursor: move;
+  touch-action: none;
+  user-select: none;
+}
+
+.item-editor header strong, .item-editor footer > :first-child {
+  margin-right: auto;
+}
+
+.item-editor button { min-height: 27px; }
+.item-editor-form:not([hidden]) { display: flex; flex-direction: column; max-height: min(500px, 100dvh - var(--editor-top, 16px) - 48px); }
+.item-editor-body { padding: 12px; overflow-y: auto; display: grid; gap: 10px; }
+.item-editor-body label { display: grid; gap: 3px; min-width: 0; }
+.item-editor-body input, .item-editor-body textarea, .item-editor-body select { box-sizing: border-box; min-width: 0; width: 100%; font: inherit; }
+.item-editor-body textarea { resize: vertical; }
+.item-editor-body fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.item-editor-body summary { cursor: pointer; }
+.item-editor-body summary small { margin-inline-start: 6px; }
+.editor-pair { display: flex; flex-wrap: wrap; gap: 10px; }
+.editor-segments label { display: inline-flex; border: 1px solid #c9ccd2; padding: 4px 8px; }
+.editor-segments label:has(:checked) { background: #e7edfb; }
+.editor-colors { display: flex; gap: 9px; align-items: center; }
+.editor-colors button { position: relative; width: 24px; min-height: 24px; height: 24px; border: 1px solid #888; border-radius: 50%; display: grid; place-items: center; }
+.editor-colors [aria-pressed="true"] {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #272b34;
+}
+.editor-colors button:focus-visible { outline-offset: 5px; }
+.item-editor footer { border-top: 1px solid #ddd; flex-wrap: wrap; align-items: flex-start; }
+.editor-primary { display: grid; justify-items: center; gap: 2px; }
+.editor-primary small { font-size: 11px; color: #5c626c; }
+.editor-error, .editor-delete { color: #a32030; }
+.editor-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+.item-editor[data-minimized] { width: min(260px, 100vw - 24px); }
+.item-editor[data-minimized] header { cursor: default; touch-action: auto; }
+
+main {
+  --roadmap-selection-ring: inset 0 0 0 2px #272b34, inset 0 0 0 3px #fff;
+}
+
+.board-card[data-editor-selected] {
+  box-shadow: var(--roadmap-selection-ring);
+}
+
+.board-card[data-editor-selected]:focus-visible,
+.roadmap-label:focus-visible {
+  outline-offset: 2px;
+}
+
+#timeline-item-list .vis-label.vis-nested-group.vis-group-level-unknown-but-gte1 {
+  border-inline-color: transparent;
+  border-top-color: transparent;
+}
+
+#timeline-item-list .vis-label.vis-nested-group > .vis-inner {
+  padding-inline-start: 8px;
+}
+
+#timeline-view .vis-item.vis-range.vis-selected {
+  border-color: #97b0f8;
+  background-color: #d5ddf6;
 }

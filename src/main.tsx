@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import type { Marker } from './MarkerEditor';
 import { ItemEditor } from './ItemEditor';
 import { makeDraft, type ItemDraft, type ItemValues } from './itemDraft';
 import type { RoadmapItem } from './prototypeItems';
@@ -25,6 +26,7 @@ function App() {
   const [view, setView] = useState<'Board' | 'Timeline'>('Timeline');
   const [boardMode, setBoardMode] = useState<BoardMode>('Detailed');
   const [items, setItems] = useState(() => createPrototypeItems(windowFor('Month', new Date()).start));
+  const [markers, setMarkers] = useState<Marker[]>([]);
   const [includeWeekends, setIncludeWeekends] = useState(false);
 
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -105,7 +107,10 @@ function App() {
         Count weekends toward duration
       </label>
       <RoadmapTimeline active={view === 'Timeline'} roadmapItems={items}
-        setRoadmapItems={setItems} includeWeekends={includeWeekends} onEdit={editItem} selectedItemId={selectedItemId} />
+        setRoadmapItems={setItems} includeWeekends={includeWeekends} onEdit={editItem} selectedItemId={selectedItemId}
+        markers={markers} onSaveMarker={(marker) => setMarkers((current) => current.some(({ id }) => id === marker.id)
+          ? current.map((entry) => entry.id === marker.id ? marker : entry) : [...current, marker])}
+        onDeleteMarker={(id) => setMarkers((current) => current.filter((marker) => marker.id !== id))} />
       {view === 'Board' && (
         <Board mode={boardMode} onModeChange={setBoardMode} items={items} onEdit={editItem} selectedItemId={selectedItemId} onReorder={(id, destination) => setItems((current) => reorderItem(current, id, destination))} />
       )}

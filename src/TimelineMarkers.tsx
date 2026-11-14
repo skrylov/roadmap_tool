@@ -6,7 +6,8 @@ import { MarkerEditor, type Marker, type MarkerDraft } from './MarkerEditor';
 import { showTruncatedText } from './truncatedText';
 
 type Geometry = { left: number; width: number; start: number; end: number };
-type Drag = { id: string; pointer: number; x: number; day: Date; proposed?: Date; moved: boolean; cancelled: boolean };
+type Drag = { id: string; pointer: number; x: number; day: Date; moved: boolean; cancelled: boolean };
+type Preview = { id: string; time: number; date: Date; dragging: boolean };
 type Editor = { marker?: Marker; anchor: HTMLElement; revision: number };
 
 export function TimelineMarkers({ active, timeline, container, toolbar, markers, onSave, onDelete }: {
@@ -21,7 +22,8 @@ export function TimelineMarkers({ active, timeline, container, toolbar, markers,
   const addButton = useRef<HTMLButtonElement>(null);
   const [geometry, setGeometry] = useState<Geometry>();
   const [editor, setEditor] = useState<Editor | null>(null);
-  const [preview, setPreview] = useState<{ id: string; date: Date }>();
+  const [preview, setPreview] = useState<Preview>();
+  const settleFrame = useRef(0);
   const drag = useRef<Drag | null>(null);
   const suppressClick = useRef(false);
   const lines = useRef(new Map<string, Marker>());
@@ -65,7 +67,7 @@ export function TimelineMarkers({ active, timeline, container, toolbar, markers,
     }
     for (const marker of markers) {
       const previous = lines.current.get(marker.id);
-      const date = preview?.id === marker.id ? preview.date : marker.date;
+      const date = preview?.id === marker.id ? new Date(preview.time) : marker.date;
       if (!previous) {
         timeline.addCustomTime(date, marker.id);
         timeline.setCustomTimeTitle('', marker.id);
@@ -87,12 +89,16 @@ export function TimelineMarkers({ active, timeline, container, toolbar, markers,
       setPreview(undefined);
     }
     window.addEventListener('keydown', escape, true);
-    return () => window.removeEventListener('keydown', escape, true);
+    return () => {
+      window.removeEventListener('keydown', escape, true);
+      cancelAnimationFrame(settleFrame.current);
+    };
   }, []);
 
   useEffect(() => {
     if (active) return;
     drag.current = null;
+    cancelAnimationFrame(settleFrame.current);
     setPreview(undefined);
   }, [active]);
 
@@ -113,33 +119,59 @@ export function TimelineMarkers({ active, timeline, container, toolbar, markers,
 
   function startDrag(event: PointerEvent<HTMLButtonElement>, marker: Marker) {
     if (!event.isPrimary || event.button !== 0) return;
+    cancelAnimationFrame(settleFrame.current);
+    setPreview(undefined);
     suppressClick.current = false;
     drag.current = { id: marker.id, pointer: event.pointerId, x: event.clientX, day: marker.date, moved: false, cancelled: false };
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
+  function timeAtPointer(current: Drag, x: number) {
+    // Preserve the original grab offset, including for labels pushed inward at the right edge.
+    const { start, end } = timeline!.getWindow();
+    const time = +current.day + (x - current.x) / geometry!.width * (+end - +start);
+    return Math.max(+start, Math.min(+end, time));
+  }
+
   function moveDrag(event: PointerEvent<HTMLButtonElement>) {
     const current = drag.current;
     if (!geometry || !current || current.pointer !== event.pointerId || current.cancelled || !timeline) return;
-    const dx = event.clientX - current.x;
-    if (!current.moved && Math.abs(dx) < 5) return;
+    if (!current.moved && Math.abs(event.clientX - current.x) < 5) return;
     current.moved = true;
     suppressClick.current = true;
-    const { start, end } = timeline.getWindow();
-    const time = +current.day + dx / geometry.width * (+end - +start);
-    const date = nearestDay(new Date(Math.max(+start, Math.min(+end, time))));
-    current.proposed = date;
-    setPreview((previous) => previous && +previous.date === +date ? previous : { id: current.id, date });
+    const time = timeAtPointer(current, event.clientX);
+    setPreview({ id: current.id, time, date: nearestDay(new Date(time)), dragging: true });
   }
 
   function finishDrag(event: PointerEvent<HTMLButtonElement>, marker: Marker) {
     const current = drag.current;
     if (!current || current.pointer !== event.pointerId) return;
     drag.current = null;
-    if (event.type === 'pointerup' && !current.cancelled && current.proposed) {
-      onSave({ ...marker, date: current.proposed });
+    if (event.type !== 'pointerup' || !current.moved || current.cancelled || !geometry || !timeline) {
+      setPreview(undefined);
+      return;
     }
-    setPreview(undefined);
+
+    const time = timeAtPointer(current, event.clientX);
+    const date = nearestDay(new Date(time));
+    onSave({ ...marker, date });
+    if (+date === time || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setPreview(undefined);
+      return;
+    }
+
+    const started = performance.now();
+    function settle(now: number) {
+      const progress = Math.min(1, (now - started) / 125);
+      if (progress === 1) {
+        setPreview(undefined);
+        return;
+      }
+      const eased = 1 - (1 - progress) ** 3;
+      setPreview({ id: marker.id, time: time + (+date - time) * eased, date, dragging: false });
+      settleFrame.current = requestAnimationFrame(settle);
+    }
+    settle(started);
   }
 
   function save(draft: MarkerDraft) {
@@ -154,30 +186,25 @@ export function TimelineMarkers({ active, timeline, container, toolbar, markers,
 
   return (
     <>
-      {toolbar && createPortal(<div className="marker-controls">
-        <button type="button" ref={addButton} onClick={(event) => open(event.currentTarget)}>Add marker</button>
-        {markers.length > 0 && (
-          <select aria-label="Find marker" value="" onChange={(event) => {
-            open(event.currentTarget, markers.find(({ id }) => id === event.target.value));
-          }}>
-            <option value="" disabled>Find marker</option>
-            {markers.map((marker) => <option key={marker.id} value={marker.id}>{marker.name} ({dateInput(marker.date)})</option>)}
-          </select>
-        )}
-      </div>, toolbar)}
+      {toolbar && createPortal(
+        <button type="button" ref={addButton} onClick={(event) => open(event.currentTarget)}>Add marker</button>,
+        toolbar,
+      )}
       <div className="marker-strip" role="group" aria-label="Timeline markers"
         style={{ marginLeft: geometry?.left, width: geometry?.width ?? 0 }} onPointerOver={showTruncatedText}>
         {geometry && markers.map((marker) => {
           const date = preview?.id === marker.id ? preview.date : marker.date;
-          const fraction = (+date - geometry.start) / (geometry.end - geometry.start);
-          const visible = fraction >= 0 && fraction <= 1;
+          const position = ((preview?.id === marker.id ? preview.time : +date) - geometry.start) /
+            (geometry.end - geometry.start) * geometry.width;
+          const dragging = preview?.id === marker.id && preview.dragging;
+          const visible = position >= 0 && position <= geometry.width;
           return (
             <button type="button" key={marker.id} className="marker-label"
               hidden={!visible && preview?.id !== marker.id}
               aria-label={`${marker.name}, ${dateInput(date)}`}
-              data-marker-dragging={preview?.id === marker.id || undefined}
-              style={{ left: `${fraction * 100}%`, '--marker-color': marker.color,
-                transform: fraction > 0.5 ? 'translateX(-100%)' : undefined } as CSSProperties}
+              data-marker-dragging={dragging || undefined}
+              style={{ left: `${position}px`, '--marker-color': marker.color,
+                '--marker-right-space': `${geometry.width - position}px` } as CSSProperties}
               onPointerDown={(event) => startDrag(event, marker)}
               onPointerMove={moveDrag}
               onPointerUp={(event) => finishDrag(event, marker)}
@@ -188,7 +215,7 @@ export function TimelineMarkers({ active, timeline, container, toolbar, markers,
               }}>
               <span aria-hidden="true">⠿</span>
               <span className="marker-name" data-truncated-text>{marker.name}</span>
-              {preview?.id === marker.id && <span className="marker-live-date" aria-hidden="true">{dateInput(date)}</span>}
+              {dragging && <span className="marker-live-date" aria-hidden="true">{dateInput(date)}</span>}
             </button>
           );
         })}

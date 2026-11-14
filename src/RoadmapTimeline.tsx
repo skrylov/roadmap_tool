@@ -94,20 +94,6 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
       selectable: true,
       itemsAlwaysDraggable: { item: true, range: true },
       snap: null,
-      onMove(item, complete) {
-        // Commit through React so the dataset only mirrors accepted date ranges.
-        complete(null);
-        if (barDrag.current?.id === item.id && (barDrag.current.mode === 'reorder' || barDrag.current.cancelled)) return;
-        if (typeof item.id !== 'string' || item.group !== item.id || item.end == null) return;
-
-        const { id } = item;
-        const range: DateRange = { start: new Date(item.start), end: new Date(item.end) };
-        if (!(range.start < range.end)) return;
-
-        setRoadmapItems((current) => current.map((entry) =>
-          entry.id === id ? { ...entry, ...range } : entry,
-        ));
-      },
       moveable: true,
       zoomable: true,
       zoomKey: 'ctrlKey',
@@ -235,13 +221,32 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
           return preview({ ...item, start: original.start, end: original.end });
         }
 
-        // vis-timeline changes both endpoints for a move, and one for a resize.
+        const before = { start: new Date(original.start), end: new Date(original.end) };
+        const proposed = { start: new Date(item.start), end: new Date(item.end) };
+        // A body move changes both endpoints. Follow the pointer until release.
+        if (+before.start !== +proposed.start && +before.end !== +proposed.end) return preview(item);
+
+        // Keep resizing constrained and snapped while the edge is dragged.
+        preview({ ...item, ...editRange(before, proposed, includeWeekends) });
+      },
+      onMove(item, complete) {
+        // Commit through React so the dataset only mirrors accepted date ranges.
+        complete(null);
+        if (barDrag.current?.id === item.id && (barDrag.current.mode === 'reorder' || barDrag.current.cancelled)) return;
+        if (typeof item.id !== 'string' || item.group !== item.id || item.end == null) return;
+        const original = timelineItems.current?.get(item.id);
+        if (!original || original.end == null) return;
+
         const range = editRange(
           { start: new Date(original.start), end: new Date(original.end) },
           { start: new Date(item.start), end: new Date(item.end) },
           includeWeekends,
         );
-        preview({ ...item, ...range });
+        if (!(range.start < range.end)) return;
+
+        setRoadmapItems((current) => current.map((entry) =>
+          entry.id === item.id ? { ...entry, ...range } : entry,
+        ));
       },
     });
   }, [includeWeekends]);

@@ -33,19 +33,40 @@ export function makeDraft(item?: RoadmapItem, category: Category = 'Now'): ItemD
   };
 }
 
+function normalizeLink(input: string) {
+  const link = input.trim();
+  if (!link) return '';
+  if (/[\s\\\u0000-\u001f\u007f]/u.test(link)) throw new Error('Invalid URL characters');
+
+  const explicit = /^https?:\/\/[^/?#]/i.test(link);
+  const url = new URL(explicit ? link : `https://${link}`);
+  if (!explicit) {
+    // A bare link must start with a domain, with an optional port.
+    const authority = link.split(/[/?#]/, 1)[0];
+    const domain = url.hostname.replace(/\.$/, '');
+    const label = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
+    if (!/^[^:@]+(?::\d+)?$/.test(authority) || !domain.includes('.') ||
+      !domain.split('.').every((part) => label.test(part))) {
+      throw new Error('Invalid bare domain');
+    }
+  }
+  return explicit ? link : `https://${link}`;
+}
+
 export function validateDraft(draft: ItemDraft, includeWeekends: boolean) {
   const errors: DraftErrors = {};
   for (const field of Object.keys(limits) as (keyof typeof limits)[]) {
-    if (draft[field].length > limits[field]) errors[field] = `Use ${limits[field].toLocaleString()} characters or fewer.`;
+    const value = field === 'link' ? draft.link.trim() : draft[field];
+    if (value.length > limits[field]) errors[field] = `Use ${limits[field].toLocaleString()} characters or fewer.`;
   }
   if (!draft.content.trim()) errors.content = 'Enter a title.';
-  const link = draft.link.trim();
-  if (link && !errors.link) {
+  let link = '';
+  if (!errors.link) {
     try {
-      const url = new URL(link);
-      if (!['http:', 'https:'].includes(url.protocol)) throw new Error();
+      link = normalizeLink(draft.link);
+      if (link.length > limits.link) errors.link = `Use ${limits.link.toLocaleString()} characters or fewer.`;
     } catch {
-      errors.link = 'Enter a full http:// or https:// URL.';
+      errors.link = 'Enter a valid domain or an http:// or https:// URL.';
     }
   }
 

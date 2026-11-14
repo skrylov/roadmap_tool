@@ -7,6 +7,7 @@ import { axisFor, axisForSpan, calendarViews, windowFor, zoomMax, zoomMin, type 
 import { categories, type RoadmapItem } from './prototypeItems';
 import { findInsertion, reorderItem, type Destination } from './reorder';
 
+import { showTruncatedText } from './truncatedText';
 import { useDragPreview } from './useDragPreview';
 
 type TimelineGroup = DataGroup & { order: number; nestedInGroup?: string };
@@ -77,6 +78,8 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
       template(item: DataItem) {
         const text = document.createElement('span');
         text.textContent = item.content;
+        text.className = 'roadmap-bar-text';
+        text.dataset.truncatedText = '';
         return text;
       },
       margin: { axis: 4, item: 4 },
@@ -135,7 +138,11 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
 
         const label = document.createElement('div');
         label.className = 'roadmap-label';
-        label.textContent = String(group.content);
+        const text = document.createElement('span');
+        text.textContent = String(group.content);
+        text.className = 'roadmap-label-text';
+        text.dataset.truncatedText = '';
+        label.append(text);
         label.draggable = true;
         label.dataset.itemId = String(group.id);
         label.tabIndex = 0;
@@ -452,6 +459,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
       <div
         ref={container}
         aria-label="Roadmap timeline"
+        onPointerOver={showTruncatedText}
         onDragOverCapture={allowDrop}
         onDropCapture={scheduleItem}
         className={ghost ? 'roadmap-reordering' : undefined}

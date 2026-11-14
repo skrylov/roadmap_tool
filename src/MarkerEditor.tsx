@@ -27,7 +27,10 @@ export function MarkerEditor({ marker, active, anchor, onClose, onSave, onDelete
     name: marker?.name ?? '', date: dateInput(marker?.date), color: marker?.color ?? markerColors[0].value,
   }));
   const [draft, setDraft] = useState(original);
-  const [error, setError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [dateError, setDateError] = useState(false);
+  const nameError = draft.name.length > nameLimit ? 'Use 60 characters or fewer.'
+    : submitted && !draft.name.trim() ? 'Enter a name.' : '';
   const [confirmation, setConfirmation] = useState<{ message: string; label: string; apply: () => void }>();
   const panel = useRef<HTMLDivElement>(null);
   const name = useRef<HTMLInputElement>(null);
@@ -112,25 +115,33 @@ export function MarkerEditor({ marker, active, anchor, onClose, onSave, onDelete
       ) : (
         <form noValidate onSubmit={(event) => {
           event.preventDefault();
+          setSubmitted(true);
           if (!draft.name.trim() || draft.name.length > nameLimit) {
-            setError(draft.name.trim() ? 'Use 60 characters or fewer.' : 'Enter a name.');
             name.current?.focus();
             return;
           }
           if ((marker || draft.date) && !Number.isFinite(+new Date(`${draft.date}T00:00:00`))) {
-            setError('Enter a valid date.');
+            setDateError(true);
             return;
           }
           close(() => onSave(draft));
         }}>
-          <label>Name
-            <input ref={name} value={draft.name} required aria-invalid={Boolean(error && !error.includes('date'))}
-              onChange={(event) => { setError(''); setDraft({ ...draft, name: event.target.value }); }} />
-          </label>
+          <div className="marker-name-field">
+            <label htmlFor="marker-name">Name</label>
+            <input id="marker-name" ref={name} value={draft.name} required aria-invalid={Boolean(nameError)}
+              aria-describedby={draft.name.length >= nameLimit * .8 || nameError ? 'marker-name-feedback' : undefined}
+              onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+            {(draft.name.length >= nameLimit * .8 || nameError) && (
+              <div id="marker-name-feedback">
+                {draft.name.length >= nameLimit * .8 && <small>{draft.name.length} / {nameLimit}</small>}
+                {nameError && <small role="alert">{nameError}</small>}
+              </div>
+            )}
+          </div>
           <label>{marker ? 'Date' : 'Date (optional)'}
             <input type="date" value={draft.date} required={Boolean(marker)}
-              aria-invalid={error.includes('date')}
-              onChange={(event) => { setError(''); setDraft({ ...draft, date: event.target.value }); }} />
+              aria-invalid={dateError}
+              onChange={(event) => { setDateError(false); setDraft({ ...draft, date: event.target.value }); }} />
           </label>
           <fieldset>
             <legend>Color</legend>
@@ -141,7 +152,7 @@ export function MarkerEditor({ marker, active, anchor, onClose, onSave, onDelete
               </label>
             ))}
           </fieldset>
-          {error && <p role="alert">{error}</p>}
+          {dateError && <p role="alert">Enter a valid date.</p>}
           <footer>
             {marker && <button type="button" onClick={() => setConfirmation({
               message: 'Delete this marker?', label: 'Delete marker', apply: onDelete,

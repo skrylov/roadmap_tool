@@ -52,7 +52,13 @@ export function scheduleRange(date: Date, duration: number, includeWeekends: boo
   return { start, end };
 }
 
-function nearestDay(date: Date) {
+export function dateInput(date?: Date) {
+  if (!date) return '';
+  return [String(date.getFullYear()).padStart(4, '0'), String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0')].join('-');
+}
+
+export function nearestDay(date: Date) {
   const midnight = startOfDay(date);
   const tomorrow = addDays(midnight, 1);
   return date.getTime() - midnight.getTime() < tomorrow.getTime() - date.getTime()

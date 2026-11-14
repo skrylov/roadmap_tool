@@ -425,3 +425,201 @@ main {
 #timeline-view .vis-range .vis-item-content {
   max-width: 100%;
 }
+
+/* The strip follows the calendar panel, independently of the scrollable rows. */
+.marker-editor footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.marker-strip {
+  position: relative;
+  height: 30px;
+  margin-top: 4px;
+  background: #f6f7f9;
+  isolation: isolate;
+}
+
+.marker-label {
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: min(150px, 45%);
+  translate: min(0px, calc(var(--marker-right-space) - 100%));
+  height: 25px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 4px 4px 0 0;
+  background: var(--marker-color);
+  color: white;
+  font: 12px system-ui, sans-serif;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.marker-label[hidden] {
+  display: none;
+}
+
+.marker-label:hover, .marker-label:focus-visible, .marker-label[data-marker-dragging] {
+  z-index: 1;
+}
+
+.marker-label[data-marker-dragging] {
+  cursor: grabbing;
+}
+
+.marker-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marker-live-date {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  padding: 2px 4px;
+  background: var(--marker-color);
+  color: white;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+#timeline-view .vis-custom-time[class*="roadmap-marker-"] {
+  width: 0;
+  background: none;
+  pointer-events: none;
+}
+
+#timeline-view .vis-custom-time[class*="roadmap-marker-"]::after {
+  position: absolute;
+  inset: 0 auto 0 var(--marker-line-offset, 0px);
+  border-left: 1px dashed var(--marker-color);
+  opacity: .5;
+  content: '';
+}
+
+#timeline-view .vis-custom-time[class*="roadmap-marker-"] > * {
+  pointer-events: none;
+}
+
+/* Keep the dash pattern out of the date text while retaining the native x position. */
+#timeline-view .vis-custom-time[class*="roadmap-marker-"]::after {
+  mask-image: linear-gradient(to bottom, #000 4px, transparent 4px var(--marker-axis-height, 0px), #000 var(--marker-axis-height, 0px));
+}
+
+.marker-editor {
+  box-sizing: border-box;
+  position: fixed;
+  z-index: 29;
+  width: min(280px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  overflow: auto;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  background: white;
+  border: 1px solid #aab3c1;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px #2223;
+  font-size: 13px;
+  transform-origin: top;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .marker-editor {
+    animation: marker-editor-open 160ms ease-out;
+  }
+}
+
+@keyframes marker-editor-open {
+  from { opacity: 0; transform: scaleY(.96); }
+  to { opacity: 1; transform: scaleY(1); }
+}
+
+.marker-editor header, .marker-editor form > label, .marker-name-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.marker-editor form {
+  display: grid;
+  gap: 8px;
+}
+
+.marker-editor form > label input, .marker-name-field input {
+  box-sizing: border-box;
+  width: 58%;
+}
+
+.marker-name-field {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+#marker-name-feedback {
+  flex-basis: 100%;
+  text-align: end;
+}
+
+#marker-name-feedback small + small {
+  margin-inline-start: 6px;
+}
+
+.marker-editor fieldset {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+}
+
+.marker-editor p {
+  margin: 0 0 6px;
+}
+
+.marker-editor [role="alert"] {
+  color: #a3112b;
+}
+
+.marker-editor footer {
+  justify-content: flex-end;
+}
+
+.marker-editor footer > :first-child:nth-last-child(3) {
+  margin-right: auto;
+}
+
+.marker-swatch {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.marker-swatch input {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.marker-swatch:has(:checked) {
+  outline: 1px solid #263344;
+  outline-offset: 2px;
+}
+
+.marker-swatch:has(:focus-visible) {
+  outline: 2px solid #235da9;
+  outline-offset: 3px;
+}

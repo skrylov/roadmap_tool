@@ -1,4 +1,4 @@
-import { scheduleEndingOn, scheduleRange, sizeDays } from './calendar';
+import { dateInput, scheduleEndingOn, scheduleRange, sizeDays } from './calendar';
 import type { Category, RoadmapItem } from './prototypeItems';
 
 export const defaultColor = '#d5ddf6';
@@ -18,12 +18,6 @@ export type ItemDraft = {
 };
 export type DraftErrors = Partial<Record<keyof typeof limits | 'schedule', string>>;
 export type ItemValues = Omit<RoadmapItem, 'id' | 'order'>;
-
-function dateInput(date?: Date) {
-  if (!date) return '';
-  return [String(date.getFullYear()).padStart(4, '0'), String(date.getMonth() + 1).padStart(2, '0'),
-    String(date.getDate()).padStart(2, '0')].join('-');
-}
 
 export function makeDraft(item?: RoadmapItem, category: Category = 'Now'): ItemDraft {
   return {

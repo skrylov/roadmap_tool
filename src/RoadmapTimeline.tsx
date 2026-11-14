@@ -8,6 +8,8 @@ import { categories, type RoadmapItem } from './prototypeItems';
 import { findInsertion, reorderItem, type Destination } from './reorder';
 
 import { showTruncatedText } from './truncatedText';
+import type { Marker } from './MarkerEditor';
+import { TimelineMarkers } from './TimelineMarkers';
 import { useDragPreview } from './useDragPreview';
 
 type TimelineGroup = DataGroup & { order: number; nestedInGroup?: string };
@@ -26,11 +28,16 @@ type Props = {
   includeWeekends: boolean;
   onEdit: (id: string) => void;
   selectedItemId?: string;
+  markers: Marker[];
+  onSaveMarker: (marker: Marker) => void;
+  onDeleteMarker: (id: string) => void;
 };
 
-export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, includeWeekends, onEdit, selectedItemId }: Props) {
+export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, includeWeekends, onEdit, selectedItemId, markers, onSaveMarker, onDeleteMarker }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const timeline = useRef<Timeline | null>(null);
+  const [markerTimeline, setMarkerTimeline] = useState<Timeline | null>(null);
+  const [markerToolbar, setMarkerToolbar] = useState<HTMLDivElement | null>(null);
   const timelineItems = useRef<DataSet<DataItem> | null>(null);
   const timelineGroups = useRef<DataSet<TimelineGroup> | null>(null);
   const barDrag = useRef<BarDrag | null>(null);
@@ -169,6 +176,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
       },
     });
     timeline.current = view;
+    setMarkerTimeline(view);
     const sidebar = container.current?.querySelector('.vis-panel.vis-left');
     sidebar?.setAttribute('id', 'timeline-item-list');
 
@@ -455,7 +463,10 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
             </button>
           ))}
         </div>
+        <div ref={setMarkerToolbar} />
       </div>
+      <TimelineMarkers active={active} timeline={markerTimeline} container={container} toolbar={markerToolbar}
+        markers={markers} onSave={onSaveMarker} onDelete={onDeleteMarker} />
       <div
         ref={container}
         aria-label="Roadmap timeline"

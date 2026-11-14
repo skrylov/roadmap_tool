@@ -74,12 +74,10 @@ export function TimelineMarkers({ active, timeline, container, toolbar, markers,
       } else if (+previous.date !== +date) {
         timeline.setCustomTime(date, marker.id);
       }
-      container.current?.querySelector<HTMLElement>(`.vis-custom-time.${marker.id}`)?.style
-        .setProperty('--marker-color', marker.color);
       next.set(marker.id, { ...marker, date });
     }
     lines.current = next;
-  }, [active, container, markers, preview, timeline]);
+  }, [active, markers, preview, timeline]);
 
   useEffect(() => {
     function escape(event: KeyboardEvent) {
@@ -186,6 +184,10 @@ export function TimelineMarkers({ active, timeline, container, toolbar, markers,
 
   return (
     <>
+      {/* Style guides before vis-timeline attaches them on its next draw. */}
+      <style>{markers.map(({ id, color }) =>
+        `#timeline-view .vis-custom-time.${CSS.escape(id)} { --marker-color: ${color}; }`,
+      ).join('\n')}</style>
       {toolbar && createPortal(
         <button type="button" ref={addButton} onClick={(event) => open(event.currentTarget)}>Add marker</button>,
         toolbar,

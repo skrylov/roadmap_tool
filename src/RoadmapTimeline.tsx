@@ -36,6 +36,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
   const contextDate = useRef(new Date());
   const getInitialItems = useEffectEvent(() => roadmapItems);
   const scrollPosition = useRef(0);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
   const preview = useDragPreview(container, roadmapItems);
   const { ghost, ghostElement, point, insertion, scrolling } = preview;
   const axisView = useRef<CalendarView>('Month');
@@ -151,6 +152,8 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
       },
     });
     timeline.current = view;
+    const sidebar = container.current?.querySelector('.vis-panel.vis-left');
+    sidebar?.setAttribute('id', 'timeline-item-list');
 
     let shaded = new Set<string>();
     function shadeWeekends(start: Date, end: Date) {
@@ -258,7 +261,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
     }
     sidebar.addEventListener('scroll', rememberScroll);
     return () => sidebar.removeEventListener('scroll', rememberScroll);
-  }, [active]);
+  }, [active, sidebarVisible]);
 
   function selectView(preset: CalendarView) {
     const view = timeline.current;
@@ -384,15 +387,29 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
     };
   }, [roadmapItems]);
 
+  const sidebarAction = sidebarVisible ? 'Hide item list' : 'Show item list';
+
   return (
     <section hidden={!active} id="timeline-view" aria-label="Timeline">
       <p>Drag between rows to reorder. Drop an unscheduled item onto its own timeline row to schedule it. Drag bars sideways to change dates or drag their edges to resize.</p>
-      <div role="group" aria-label="Calendar view">
-        {calendarViews.map((preset) => (
-          <button key={preset} type="button" aria-pressed={selectedView === preset} onClick={() => selectView(preset)}>
-            {preset}
-          </button>
-        ))}
+      <div className="timeline-toolbar">
+        <button type="button" className="timeline-sidebar-toggle" title={sidebarAction}
+          aria-label={sidebarAction} aria-expanded={sidebarVisible} aria-controls="timeline-item-list"
+          onClick={() => setSidebarVisible((visible) => !visible)}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="M9 5v14" />
+            <path d={sidebarVisible ? 'm16 9-3 3 3 3' : 'm13 9 3 3-3 3'} />
+          </svg>
+        </button>
+        <div role="group" aria-label="Calendar view">
+          {calendarViews.map((preset) => (
+            <button key={preset} type="button" aria-pressed={selectedView === preset} onClick={() => selectView(preset)}>
+              {preset}
+            </button>
+          ))}
+        </div>
       </div>
       <div
         ref={container}
@@ -400,6 +417,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
         onDragOverCapture={allowDrop}
         onDropCapture={scheduleItem}
         className={ghost ? 'roadmap-reordering' : undefined}
+        data-sidebar-hidden={!sidebarVisible || undefined}
         onPointerDownCapture={startBarDrag}
       />
       {ghost && point.current && (

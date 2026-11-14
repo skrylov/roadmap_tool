@@ -210,3 +210,60 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.timeline-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-sidebar-toggle {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+}
+
+.timeline-toolbar [aria-label="Calendar view"] {
+  border-inline-start: 1px solid #d2d2d2;
+  padding-inline-start: 8px;
+}
+
+/* Keep the label rows measurable and the native scroll panel intact. */
+[data-sidebar-hidden] .vis-panel.vis-left > .vis-content {
+  width: 1px !important;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+[data-sidebar-hidden] .vis-panel.vis-left .vis-labelset {
+  width: max-content;
+}
+
+@media (max-width: 600px) {
+  .timeline-toolbar {
+    flex-wrap: wrap;
+  }
+
+  #timeline-item-list > .vis-content {
+    max-width: 42vw;
+    overflow: hidden;
+  }
+
+  #timeline-item-list .vis-labelset {
+    width: max-content;
+  }
+
+  #timeline-item-list .vis-nested-group > .vis-inner {
+    padding-inline-start: 8px;
+  }
+
+  #timeline-item-list .roadmap-label {
+    width: calc(42vw - 30px);
+  }
+}
+
+[aria-label="Roadmap timeline"] .vis-center .vis-foreground > .vis-group {
+  border-bottom-color: transparent;
+}

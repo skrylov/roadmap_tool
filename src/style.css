@@ -371,6 +371,17 @@ body {
 .item-editor-body summary { cursor: pointer; }
 .item-editor-body summary small { margin-inline-start: 6px; }
 .editor-pair { display: flex; flex-wrap: wrap; gap: 10px; }
+.editor-unschedule {
+  justify-self: start;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: #5c626c;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
 .editor-segments label { display: inline-flex; border: 1px solid #c9ccd2; padding: 4px 8px; }
 .editor-segments label:has(:checked) { background: #e7edfb; }
 .editor-colors { display: flex; gap: 9px; align-items: center; }

@@ -133,6 +133,12 @@ export function ItemEditor(props: Props) {
               <label>Ready<input type="date" value={draft.end} onChange={(event) => change('end', event.target.value)} /></label>
             </div>
           </details>
+          {(draft.start || draft.end) && (
+            <button type="button" className="editor-unschedule"
+              onClick={() => props.onChange({ ...draft, start: '', end: '' })}>
+              Remove from timeline
+            </button>
+          )}
           {errors.schedule && <small className="editor-error" role="alert">{errors.schedule}</small>}
           <div className="editor-pair">
             <fieldset className="editor-segments"><legend>Size</legend>

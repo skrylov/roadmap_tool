@@ -312,12 +312,29 @@ body {
 .editor-pair { display: flex; flex-wrap: wrap; gap: 10px; }
 .editor-segments label { display: inline-flex; border: 1px solid #c9ccd2; padding: 4px 8px; }
 .editor-segments label:has(:checked) { background: #e7edfb; }
-.editor-colors { display: flex; gap: 6px; align-items: center; }
-.editor-colors button, .editor-colors .editor-custom-color { position: relative; width: 24px; min-height: 24px; height: 24px; border: 1px solid #888; border-radius: 50%; display: grid; place-items: center; }
-.editor-colors [aria-pressed="true"], .editor-colors [data-selected], .editor-custom-color:focus-within { outline: 2px solid #245cb1; outline-offset: 2px; }
-.editor-custom-color input { position: absolute; inset: 0; height: 100%; opacity: 0; cursor: pointer; }
+.editor-colors { display: flex; gap: 9px; align-items: center; }
+.editor-colors button { position: relative; width: 24px; min-height: 24px; height: 24px; border: 1px solid #888; border-radius: 50%; display: grid; place-items: center; }
+.editor-colors [aria-pressed="true"] {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #272b34;
+}
+.editor-colors button:focus-visible { outline-offset: 5px; }
 .item-editor footer { border-top: 1px solid #ddd; flex-wrap: wrap; }
 .editor-primary { display: grid; justify-items: center; }
 .editor-error, .editor-delete { color: #a32030; }
 .editor-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
+.item-editor[data-minimized] { width: min(260px, 100vw - 24px); }
+.item-editor[data-minimized] header { cursor: default; touch-action: auto; }
+
+main {
+  --roadmap-selection-ring: inset 0 0 0 2px #272b34, inset 0 0 0 3px #fff;
+}
+
+.board-card[data-editor-selected] {
+  box-shadow: var(--roadmap-selection-ring);
+}
+
+.board-card[data-editor-selected]:focus-visible,
+.roadmap-label:focus-visible {
+  outline-offset: 2px;
+}

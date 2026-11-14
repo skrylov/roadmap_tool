@@ -63,7 +63,7 @@ export function ItemEditor(props: Props) {
   }
 
   function startDrag(event: PointerEvent<HTMLElement>) {
-    if (event.button !== 0 || (event.target as HTMLElement).closest('button')) return;
+    if (minimized || event.button !== 0 || (event.target as HTMLElement).closest('button')) return;
     const rect = editor.current?.getBoundingClientRect();
     if (!rect) return;
     drag.current = { x: event.clientX - rect.left, y: event.clientY - rect.top };
@@ -91,9 +91,9 @@ export function ItemEditor(props: Props) {
 
   const summary = [draft.start, draft.end].filter(Boolean).join(' → ') || 'Not scheduled';
   return (
-    <section ref={editor} className="item-editor" role="dialog" aria-labelledby="item-editor-title"
-      style={position ? { left: `clamp(0px, ${position.x}px, 100vw - min(412px, 100vw - 24px))`,
-        '--editor-top': `clamp(0px, ${position.y}px, 100dvh - ${minimized ? 44 : 145}px)`,
+    <section ref={editor} className="item-editor" data-minimized={minimized || undefined} role="dialog" aria-labelledby="item-editor-title"
+      style={position && !minimized ? { left: `clamp(0px, ${position.x}px, 100vw - min(412px, 100vw - 24px))`,
+        '--editor-top': `clamp(0px, ${position.y}px, 100dvh - 145px)`,
         top: 'var(--editor-top)', right: 'auto', bottom: 'auto' } as CSSProperties : undefined}>
       <header style={{ backgroundColor: `${draft.color}55` }}
         onPointerDown={startDrag} onPointerMove={moveDrag} onLostPointerCapture={() => { drag.current = null; }}>
@@ -105,9 +105,12 @@ export function ItemEditor(props: Props) {
       <form hidden={minimized} className="item-editor-form" noValidate
         onSubmit={(event) => { event.preventDefault(); save(); }}
         onKeyDown={(event) => {
-          if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+          if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
+          if (event.ctrlKey || event.metaKey) {
             event.preventDefault();
             save();
+          } else if (event.target instanceof HTMLInputElement) {
+            event.preventDefault();
           }
         }}>
         <div className="item-editor-body">
@@ -132,17 +135,16 @@ export function ItemEditor(props: Props) {
           </details>
           {errors.schedule && <small className="editor-error" role="alert">{errors.schedule}</small>}
           <div className="editor-pair">
-            <label>Size<select value={draft.size} onChange={(event) => change('size', event.target.value as ItemDraft['size'])}>
-              <option>S</option><option>M</option><option>L</option>
-            </select></label>
+            <fieldset className="editor-segments"><legend>Size</legend>
+              {(['S', 'M', 'L'] as const).map((size) => (
+                <label key={size}><input type="radio" name="item-size" checked={draft.size === size}
+                  onChange={() => change('size', size)} />{size}</label>
+              ))}
+            </fieldset>
             <fieldset><legend>Color</legend><div className="editor-colors">
               {itemColors.map((color, index) => <button key={color} type="button" style={{ background: color }}
                 aria-label={['Blue', 'Green', 'Amber', 'Pink', 'Purple'][index]} aria-pressed={color === draft.color}
                 onClick={() => change('color', color)} />)}
-              <label className="editor-custom-color" data-selected={!itemColors.includes(draft.color) || undefined}>
-                +<input type="color" aria-label="Custom color" value={draft.color}
-                  onChange={(event) => change('color', event.target.value)} />
-              </label>
             </div></fieldset>
           </div>
           <label>Link<input type="url" aria-label="Link" value={draft.link} aria-invalid={Boolean(errors.link)}

@@ -9,12 +9,12 @@ import type { Destination } from './reorder';
 type Slot = { category: Category; index: number };
 const slotId = ({ category, index }: Slot) => `slot-${category}-${index}`;
 
-function Card({ item, offset, onEdit }: { item: RoadmapItem; offset: number; onEdit: (id: string) => void }) {
+function Card({ item, offset, onEdit, selected }: { item: RoadmapItem; offset: number; onEdit: (id: string) => void; selected: boolean }) {
   const { setNodeRef, attributes, listeners, isDragging } = useDraggable({ id: item.id, data: { item } });
   return (
     <button ref={setNodeRef} type="button" className="board-card"
       style={offset ? { transform: `translateY(${offset}px)` } : undefined}
-      data-item-id={item.id} data-dragging={isDragging || undefined} {...attributes} {...listeners} onClick={() => onEdit(item.id)}>
+      data-item-id={item.id} data-editor-selected={selected || undefined} data-dragging={isDragging || undefined} {...attributes} {...listeners} onClick={() => onEdit(item.id)}>
       <span>{item.content}</span><span>{item.size}</span>
     </button>
   );
@@ -29,13 +29,14 @@ function InsertionSlot({ category, index, disabled, offset }: Slot & { disabled:
   );
 }
 
-function Column({ category, items, source, target, step, onEdit }: {
+function Column({ category, items, source, target, step, onEdit, selectedItemId }: {
   category: Category;
   items: RoadmapItem[];
   source: RoadmapItem | undefined;
   target: Slot | null;
   step: number;
   onEdit: (id: string) => void;
+  selectedItemId?: string;
 }) {
   const { setNodeRef } = useDroppable({ id: category, data: { category } });
   const sourceIndex = source?.category === category ? source.order : -1;
@@ -51,7 +52,7 @@ function Column({ category, items, source, target, step, onEdit }: {
         <Fragment key={item.id}>
           <InsertionSlot category={category} index={index}
             disabled={index === sourceIndex + 1 && sourceIndex >= 0} offset={afterSource(index) ? -step : 0} />
-          <Card item={item} onEdit={onEdit} offset={item.id === source?.id ? 0 : cardOffset(index)} />
+          <Card item={item} onEdit={onEdit} selected={item.id === selectedItemId} offset={item.id === source?.id ? 0 : cardOffset(index)} />
         </Fragment>
       ))}
       <InsertionSlot category={category} index={items.length}
@@ -137,9 +138,10 @@ function destinationFor(item: RoadmapItem, slot: Slot): Destination {
   };
 }
 
-export function Board({ items, onReorder, onEdit }: {
+export function Board({ items, onReorder, onEdit, selectedItemId }: {
   items: RoadmapItem[];
   onEdit: (id: string) => void;
+  selectedItemId?: string;
   onReorder: (id: string, destination: Destination) => void;
 }) {
   const [drag, setDrag] = useState<{ id: string; step: number } | null>(null);
@@ -198,7 +200,7 @@ export function Board({ items, onReorder, onEdit }: {
         data-dragging={Boolean(drag) || undefined}
         style={{ '--board-drag-step': `${drag?.step ?? 0}px` } as CSSProperties}>
         {categories.map((category) => (
-          <Column key={category} category={category} onEdit={onEdit}
+          <Column key={category} category={category} onEdit={onEdit} selectedItemId={selectedItemId}
             items={items.filter((item) => item.category === category).sort((a, b) => a.order - b.order)}
             source={dragged} target={target} step={drag?.step ?? 0} />
         ))}

@@ -87,6 +87,7 @@ function App() {
     }
   }
 
+  const selectedItemId = editor?.id;
   const editItem = (id: string) => request({ action: 'open', id });
 
   return (
@@ -103,9 +104,9 @@ function App() {
         Count weekends toward duration
       </label>
       <RoadmapTimeline active={view === 'Timeline'} roadmapItems={items}
-        setRoadmapItems={setItems} includeWeekends={includeWeekends} onEdit={editItem} />
+        setRoadmapItems={setItems} includeWeekends={includeWeekends} onEdit={editItem} selectedItemId={selectedItemId} />
       {view === 'Board' && (
-        <Board items={items} onEdit={editItem} onReorder={(id, destination) => setItems((current) => reorderItem(current, id, destination))} />
+        <Board items={items} onEdit={editItem} selectedItemId={selectedItemId} onReorder={(id, destination) => setItems((current) => reorderItem(current, id, destination))} />
       )}
       {editor && (
         <ItemEditor draft={editor.draft} session={editor.session} editing={Boolean(editor.id)}

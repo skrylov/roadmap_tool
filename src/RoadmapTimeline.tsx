@@ -16,7 +16,6 @@ function groupId(category: string) {
   return `category-${category}`;
 }
 
-const dateLabel = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' });
 const dragType = 'application/x-roadmap-item';
 
 type Props = {
@@ -25,9 +24,10 @@ type Props = {
   setRoadmapItems: Dispatch<SetStateAction<RoadmapItem[]>>;
   includeWeekends: boolean;
   onEdit: (id: string) => void;
+  selectedItemId?: string;
 };
 
-export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, includeWeekends, onEdit }: Props) {
+export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, includeWeekends, onEdit, selectedItemId }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const timeline = useRef<Timeline | null>(null);
   const timelineItems = useRef<DataSet<DataItem> | null>(null);
@@ -417,6 +417,14 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
 
   return (
     <section hidden={!active} id="timeline-view" aria-label="Timeline">
+      {selectedItemId && (
+        <style>{`
+          #timeline-view .roadmap-label[data-item-id="${CSS.escape(selectedItemId)}"],
+          #timeline-view .vis-item.vis-range[data-id="${CSS.escape(selectedItemId)}"] {
+            box-shadow: var(--roadmap-selection-ring);
+          }
+        `}</style>
+      )}
       <p>Drag between rows to reorder. Drop an unscheduled item onto its own timeline row to schedule it. Drag bars sideways to change dates or drag their edges to resize.</p>
       <div className="timeline-toolbar">
         <button type="button" className="timeline-sidebar-toggle" title={sidebarAction}
@@ -476,13 +484,6 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
           <span>{insertion.category} · Position {insertion.index + 1}{insertion.headerHeight ? ' (end)' : ''}</span>
         </div>
       )}
-      <ul aria-label="Scheduled dates">
-        {roadmapItems.map(({ id, content, start, end }) => (
-          <li key={id}>
-            {content} · {start && end ? `${dateLabel.format(start)} → ${dateLabel.format(end)} ready` : 'Unscheduled'}
-          </li>
-        ))}
-      </ul>
     </section>
   );
 }

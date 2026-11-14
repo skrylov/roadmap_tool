@@ -105,12 +105,6 @@ function App() {
     setItems((current) => {
       const previous = current.find((item) => item.id === id);
       const updated = { ...previous, ...values, id, order: previous?.order ?? 0 };
-      if (previous) {
-        // Preserve omitted optional fields when the draft only changes the schedule.
-        for (const field of ['description', 'rationale', 'color', 'link'] as const) {
-          if (values[field] === editor.original[field]) updated[field] = previous[field];
-        }
-      }
       const sameCategory = previous?.category === values.category;
       return normalizeOrder(sameCategory
         ? current.map((item) => item.id === id ? updated : item)

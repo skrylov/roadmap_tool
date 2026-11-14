@@ -372,7 +372,7 @@ body {
 .item-editor-body summary small { margin-inline-start: 6px; }
 .editor-pair { display: flex; flex-wrap: wrap; gap: 10px; }
 .editor-unschedule {
-  margin-block-start: 6px;
+  justify-self: start;
   padding: 2px 0;
   border: 0;
   background: none;

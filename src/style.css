@@ -155,7 +155,7 @@ body {
   border-radius: 4px;
 }
 
-.board-card[data-mode="Detailed"] { height: 146px; }
+.board-card[data-mode="Detailed"] { height: 152px; }
 
 .board-card-action {
   width: 100%;
@@ -203,7 +203,7 @@ body {
   width: 100%;
   -webkit-line-clamp: 3;
   font-size: 14px;
-  line-height: 16px;
+  line-height: 18px;
   white-space: pre-wrap;
 }
 

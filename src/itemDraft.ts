@@ -27,7 +27,7 @@ export function makeDraft(item?: RoadmapItem, category: Category = 'Now'): ItemD
   };
 }
 
-function normalizeLink(input: string) {
+export function normalizeLink(input: string) {
   const link = input.trim();
   if (!link) return '';
   if (/[\s\\\u0000-\u001f\u007f]/u.test(link)) throw new Error('Invalid URL characters');

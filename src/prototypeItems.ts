@@ -10,6 +10,10 @@ export type RoadmapItem = Partial<DateRange> & {
   size: Size;
   category: Category;
   order: number;
+  description?: string;
+  rationale?: string;
+  color?: string;
+  link?: string;
 };
 
 type Fixture = [id: string, content: string, size: Size, schedule?: [offset: number, duration: number]];

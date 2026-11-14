@@ -24,14 +24,16 @@ type Props = {
   roadmapItems: RoadmapItem[];
   setRoadmapItems: Dispatch<SetStateAction<RoadmapItem[]>>;
   includeWeekends: boolean;
+  onEdit: (id: string) => void;
 };
 
-export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, includeWeekends }: Props) {
+export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, includeWeekends, onEdit }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const timeline = useRef<Timeline | null>(null);
   const timelineItems = useRef<DataSet<DataItem> | null>(null);
   const timelineGroups = useRef<DataSet<TimelineGroup> | null>(null);
   const barDrag = useRef<BarDrag | null>(null);
+  const clickItem = useRef<{ id: string; x: number; y: number } | null>(null);
   const draggedId = useRef<string | null>(null);
   const contextDate = useRef(new Date());
   const getInitialItems = useEffectEvent(() => roadmapItems);
@@ -72,6 +74,11 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
       orientation: 'top',
       groupOrder: 'order',
       dataAttributes: ['id'],
+      template(item: DataItem) {
+        const text = document.createElement('span');
+        text.textContent = item.content;
+        return text;
+      },
       margin: { axis: 4, item: 4 },
       editable: { updateTime: true, updateGroup: false, add: false, remove: false },
       selectable: true,
@@ -131,10 +138,13 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
         label.textContent = String(group.content);
         label.draggable = true;
         label.dataset.itemId = String(group.id);
+        label.tabIndex = 0;
+        label.setAttribute('role', 'button');
         // Keep the timeline's gesture handler from capturing the drag source.
         label.addEventListener('pointerdown', (event) => event.stopPropagation());
         label.addEventListener('dragstart', (event) => {
           if (!event.dataTransfer) return;
+          clickItem.current = null;
           draggedId.current = String(group.id);
           event.dataTransfer.setData(dragType, draggedId.current);
           event.dataTransfer.effectAllowed = 'copyMove';
@@ -223,6 +233,15 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
 
   useEffect(() => {
     if (!active) return;
+    const items = timelineItems.current;
+    const bars = roadmapItems.flatMap(({ id, content, start, end, color }) =>
+      start && end ? [{ id, group: id, content, start, end, style: color ? `background-color: ${color}` : '' }] : [],
+    );
+    if (items) {
+      // Weekend backgrounds share the dataset and are managed by shadeWeekends.
+      const scheduled = new Set(bars.map(({ id }) => id));
+      items.remove(items.getIds({ filter: (item) => item.type !== 'background' && !scheduled.has(String(item.id)) }));
+    }
     const groups = timelineGroups.current;
     if (groups) {
       const updates = categories.flatMap((category) => {
@@ -230,12 +249,13 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
         const children = roadmapItems.filter((item) => item.category === category);
         const nestedGroups = children.map(({ id }) => id);
         const expanded = parent?.showNested !== false;
-        const changed: Partial<TimelineGroup>[] = children.flatMap(({ id, order }) => {
+        const changed: Partial<TimelineGroup>[] = children.flatMap(({ id, order, content: title, size }) => {
+          const content = `${title} (${size})`;
           const row = groups.get(id);
           const visible = expanded;
-          return row && row.order === order && row.nestedInGroup === groupId(category)
+          return row && row.content === content && row.order === order && row.nestedInGroup === groupId(category)
             && (row.visible !== false) === visible
-            ? [] : [{ id, order, visible, nestedInGroup: groupId(category) }];
+            ? [] : [{ id, content, order, visible, nestedInGroup: groupId(category) }];
         });
         if (parent?.nestedGroups?.join() !== nestedGroups.join()) {
           changed.push({ id: groupId(category), nestedGroups });
@@ -243,11 +263,10 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
         return changed;
       });
       if (updates.length) groups.update(updates);
+      const existing = new Set(roadmapItems.map(({ id }) => id));
+      groups.remove(groups.getIds({ filter: (group) => !group.nestedGroups && !existing.has(String(group.id)) }));
     }
-    const bars = roadmapItems.flatMap(({ id, content, start, end }) =>
-      start && end ? [{ id, group: id, content, start, end }] : [],
-    );
-    timelineItems.current?.update(bars);
+    items?.update(bars);
   }, [active, roadmapItems]);
 
   useEffect(() => {
@@ -322,13 +341,20 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
   function startBarDrag(event: React.PointerEvent<HTMLDivElement>) {
     const target = event.target as HTMLElement;
     const item = target.closest<HTMLElement>('.vis-item.vis-range[data-id]');
-    if (!item?.dataset.id || event.button !== 0 || !event.isPrimary) return;
+    clickItem.current = null;
+    if (event.button !== 0 || !event.isPrimary) return;
     // Edges always resize. Only a bar body can switch to row insertion.
     if (target.closest('.vis-drag-left, .vis-drag-right')) return;
-    barDrag.current = { id: item.dataset.id, x: event.clientX, y: event.clientY, pointerId: event.pointerId };
+    const id = item?.dataset.id ?? target.closest<HTMLElement>('.roadmap-label')?.dataset.itemId;
+    if (!id) return;
+    clickItem.current = { id, x: event.clientX, y: event.clientY };
+    if (!item) return;
+    barDrag.current = { id, x: event.clientX, y: event.clientY, pointerId: event.pointerId };
   }
 
   function trackBarDrag(event: PointerEvent) {
+    const click = clickItem.current;
+    if (click && Math.hypot(event.clientX - click.x, event.clientY - click.y) >= 5) clickItem.current = null;
     const drag = barDrag.current;
     if (!drag || drag.cancelled || event.pointerId !== drag.pointerId || !(event.buttons & 1)) return;
     const dx = Math.abs(event.clientX - drag.x);
@@ -419,6 +445,20 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
         className={ghost ? 'roadmap-reordering' : undefined}
         data-sidebar-hidden={!sidebarVisible || undefined}
         onPointerDownCapture={startBarDrag}
+        onClickCapture={(event) => {
+          const click = clickItem.current;
+          clickItem.current = null;
+          if (!click) return;
+          const target = (event.target as HTMLElement).closest<HTMLElement>('[data-item-id], .vis-range[data-id]');
+          if ((target?.dataset.itemId ?? target?.dataset.id) === click.id) onEdit(click.id);
+        }}
+        onKeyDown={(event) => {
+          const id = (event.target as HTMLElement).closest<HTMLElement>('.roadmap-label')?.dataset.itemId;
+          if (id && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            onEdit(id);
+          }
+        }}
       />
       {ghost && point.current && (
         <div ref={ghostElement} className="roadmap-drag-ghost" aria-hidden="true"

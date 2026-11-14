@@ -20,6 +20,7 @@ function groupId(category: string) {
 }
 
 const dragType = 'application/x-roadmap-item';
+const transparentPixel = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
 type Props = {
   active: boolean;
@@ -53,11 +54,9 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
   const [selectedView, setSelectedView] = useState<CalendarView | null>('Month');
 
   useEffect(() => {
-    const dragImage = document.createElement('canvas');
-    dragImage.width = dragImage.height = 1;
-    dragImage.style.cssText = 'position: fixed; top: 0; left: 0; pointer-events: none;';
-    dragImage.setAttribute('aria-hidden', 'true');
-    document.body.append(dragImage);
+    // Chrome uses the decoded pixels of an image directly, including transparency.
+    const dragImage = new Image();
+    dragImage.src = transparentPixel;
 
     const initialWindow = windowFor('Month', contextDate.current);
     const items = new DataSet<DataItem>();
@@ -168,7 +167,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
           draggedId.current = String(group.id);
           event.dataTransfer.setData(dragType, draggedId.current);
           event.dataTransfer.effectAllowed = 'copyMove';
-          // Keep a rendered blank canvas available so Chrome can capture it as the native drag image.
+          // Use the in-page ghost for feedback and keep the native drop events.
           event.dataTransfer.setDragImage(dragImage, 0, 0);
           preview.update({ id: String(group.id), x: event.clientX, y: event.clientY, canScroll: false });
         });
@@ -222,7 +221,6 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
 
     return () => {
       view.destroy();
-      dragImage.remove();
       timeline.current = null;
       timelineItems.current = null;
       timelineGroups.current = null;
@@ -332,7 +330,12 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
     event.stopPropagation();
     const scheduling = getDropTime(event, id);
     const target = scheduling ? null : previewInsertion(id, event.clientX, event.clientY);
-    preview.update({ id, x: event.clientX, y: event.clientY, canScroll: !scheduling });
+    // Crossing from an unscheduled label to its calendar row is a horizontal gesture.
+    // Keep that row from scrolling away while the pointer is still over its own sidebar row.
+    const sourceRow = (event.target as Element).closest('.vis-label')
+      ?.querySelector<HTMLElement>('.roadmap-label')?.dataset.itemId === id;
+    const canScroll = !scheduling && (!sourceRow || roadmapItems.some((item) => item.id === id && item.start));
+    preview.update({ id, x: event.clientX, y: event.clientY, canScroll });
     if (!scheduling && !target) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = scheduling ? 'copy' : 'move';

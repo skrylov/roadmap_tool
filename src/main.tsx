@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { ItemEditor } from './ItemEditor';
 import { makeDraft, type ItemDraft, type ItemValues } from './itemDraft';
 import type { RoadmapItem } from './prototypeItems';
-import { Board } from './Board';
+import { Board, type BoardMode } from './Board';
 import { RoadmapTimeline } from './RoadmapTimeline';
 import { windowFor } from './calendarViews';
 import { createPrototypeItems } from './prototypeItems';
@@ -23,6 +23,7 @@ function normalizeOrder(items: RoadmapItem[]) {
 
 function App() {
   const [view, setView] = useState<'Board' | 'Timeline'>('Timeline');
+  const [boardMode, setBoardMode] = useState<BoardMode>('Detailed');
   const [items, setItems] = useState(() => createPrototypeItems(windowFor('Month', new Date()).start));
   const [includeWeekends, setIncludeWeekends] = useState(false);
 
@@ -106,7 +107,7 @@ function App() {
       <RoadmapTimeline active={view === 'Timeline'} roadmapItems={items}
         setRoadmapItems={setItems} includeWeekends={includeWeekends} onEdit={editItem} selectedItemId={selectedItemId} />
       {view === 'Board' && (
-        <Board items={items} onEdit={editItem} selectedItemId={selectedItemId} onReorder={(id, destination) => setItems((current) => reorderItem(current, id, destination))} />
+        <Board mode={boardMode} onModeChange={setBoardMode} items={items} onEdit={editItem} selectedItemId={selectedItemId} onReorder={(id, destination) => setItems((current) => reorderItem(current, id, destination))} />
       )}
       {editor && (
         <ItemEditor draft={editor.draft} session={editor.session} editing={Boolean(editor.id)}

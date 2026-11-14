@@ -4,19 +4,64 @@ import {
   type CollisionDetection, type KeyboardCoordinateGetter,
 } from '@dnd-kit/core';
 import { categories, type Category, type RoadmapItem } from './prototypeItems';
+import { defaultColor } from './itemDraft';
+import { showTruncatedText } from './truncatedText';
 import type { Destination } from './reorder';
+
+export type BoardMode = 'Compact' | 'Detailed';
+
+const dateLabel = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: '2-digit' });
+
+function CardContents({ item, mode }: { item: RoadmapItem; mode: BoardMode }) {
+  return (
+    <>
+      <span className="board-card-heading">
+        <span className="board-card-title" data-truncated-text>{item.content}</span>
+        <span>{item.size}</span>
+      </span>
+      {mode === 'Detailed' && (
+        <>
+          <span className="board-card-description" data-truncated-text>{item.description}</span>
+          {item.start && item.end && (
+            <span className="board-card-dates" aria-label="Start to Ready">
+              {dateLabel.format(item.start)} → {dateLabel.format(item.end)}
+            </span>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+function LinkLabel() {
+  return (
+    <>Link<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+      <path d="M9 3h4v4m0-4L7 9m6 0v4H3V3h4" />
+    </svg></>
+  );
+}
 
 type Slot = { category: Category; index: number };
 const slotId = ({ category, index }: Slot) => `slot-${category}-${index}`;
 
-function Card({ item, offset, onEdit, selected }: { item: RoadmapItem; offset: number; onEdit: (id: string) => void; selected: boolean }) {
-  const { setNodeRef, attributes, listeners, isDragging } = useDraggable({ id: item.id, data: { item } });
+function Card({ item, offset, onEdit, selected, mode }: {
+  item: RoadmapItem; offset: number; onEdit: (id: string) => void; selected: boolean; mode: BoardMode;
+}) {
+  const { setNodeRef, setActivatorNodeRef, attributes, listeners, isDragging } = useDraggable({ id: item.id, data: { item } });
   return (
-    <button ref={setNodeRef} type="button" className="board-card"
-      style={offset ? { transform: `translateY(${offset}px)` } : undefined}
-      data-item-id={item.id} data-editor-selected={selected || undefined} data-dragging={isDragging || undefined} {...attributes} {...listeners} onClick={() => onEdit(item.id)}>
-      <span>{item.content}</span><span>{item.size}</span>
-    </button>
+    <div ref={setNodeRef} className="board-card" data-mode={mode}
+      style={{ borderInlineStartColor: item.color ?? defaultColor, transform: offset ? `translateY(${offset}px)` : undefined }}
+      data-item-id={item.id} data-editor-selected={selected || undefined} data-dragging={isDragging || undefined}>
+      <button ref={setActivatorNodeRef} type="button" className="board-card-action"
+        {...attributes} {...listeners} onClick={() => onEdit(item.id)}>
+        <CardContents item={item} mode={mode} />
+      </button>
+      {mode === 'Detailed' && item.link && (
+        <a className="board-card-link" href={item.link} title={item.link} target="_blank" rel="noopener noreferrer">
+          <LinkLabel />
+        </a>
+      )}
+    </div>
   );
 }
 
@@ -29,12 +74,13 @@ function InsertionSlot({ category, index, disabled, offset }: Slot & { disabled:
   );
 }
 
-function Column({ category, items, source, target, step, onEdit, selectedItemId }: {
+function Column({ category, items, source, target, step, onEdit, selectedItemId, mode }: {
   category: Category;
   items: RoadmapItem[];
   source: RoadmapItem | undefined;
   target: Slot | null;
   step: number;
+  mode: BoardMode;
   onEdit: (id: string) => void;
   selectedItemId?: string;
 }) {
@@ -52,7 +98,7 @@ function Column({ category, items, source, target, step, onEdit, selectedItemId 
         <Fragment key={item.id}>
           <InsertionSlot category={category} index={index}
             disabled={index === sourceIndex + 1 && sourceIndex >= 0} offset={afterSource(index) ? -step : 0} />
-          <Card item={item} onEdit={onEdit} selected={item.id === selectedItemId} offset={item.id === source?.id ? 0 : cardOffset(index)} />
+          <Card mode={mode} item={item} onEdit={onEdit} selected={item.id === selectedItemId} offset={item.id === source?.id ? 0 : cardOffset(index)} />
         </Fragment>
       ))}
       <InsertionSlot category={category} index={items.length}
@@ -138,8 +184,10 @@ function destinationFor(item: RoadmapItem, slot: Slot): Destination {
   };
 }
 
-export function Board({ items, onReorder, onEdit, selectedItemId }: {
+export function Board({ items, onReorder, onEdit, selectedItemId, mode, onModeChange }: {
   items: RoadmapItem[];
+  mode: BoardMode;
+  onModeChange: (mode: BoardMode) => void;
   onEdit: (id: string) => void;
   selectedItemId?: string;
   onReorder: (id: string, destination: Destination) => void;
@@ -154,7 +202,13 @@ export function Board({ items, onReorder, onEdit, selectedItemId }: {
   const dragged = items.find((item) => item.id === drag?.id);
 
   return (
-    <DndContext sensors={sensors} collisionDetection={(args) => getCollisions(args, target, drag?.step ?? 0)}
+    <>
+      <div role="group" aria-label="Board display">
+        {(['Compact', 'Detailed'] as const).map((option) => (
+          <button key={option} type="button" aria-pressed={mode === option} onClick={() => onModeChange(option)}>{option}</button>
+        ))}
+      </div>
+      <DndContext sensors={sensors} collisionDetection={(args) => getCollisions(args, target, drag?.step ?? 0)}
       accessibility={{
         screenReaderInstructions: { draggable: 'Press Space to pick up a card. Use up and down to reorder, or left and right to change columns. Press Space to drop or Escape to cancel.' },
         announcements: {
@@ -192,22 +246,30 @@ export function Board({ items, onReorder, onEdit, selectedItemId }: {
         onReorder(item.id, destinationFor(item, slot));
         if (activatorEvent.type === 'keydown') {
           requestAnimationFrame(() => board.current
-            ?.querySelector<HTMLButtonElement>(`[data-item-id="${CSS.escape(item.id)}"]`)?.focus());
+            ?.querySelector<HTMLButtonElement>(`[data-item-id="${CSS.escape(item.id)}"] .board-card-action`)?.focus());
         }
       }}
     >
-      <div className="roadmap-board" ref={board}
+      <div className="roadmap-board" ref={board} onPointerOver={showTruncatedText}
         data-dragging={Boolean(drag) || undefined}
         style={{ '--board-drag-step': `${drag?.step ?? 0}px` } as CSSProperties}>
         {categories.map((category) => (
-          <Column key={category} category={category} onEdit={onEdit} selectedItemId={selectedItemId}
+          <Column mode={mode} key={category} category={category} onEdit={onEdit} selectedItemId={selectedItemId}
             items={items.filter((item) => item.category === category).sort((a, b) => a.order - b.order)}
             source={dragged} target={target} step={drag?.step ?? 0} />
         ))}
       </div>
       <DragOverlay dropAnimation={null}>
-        {dragged && <div className="board-card board-card-preview"><span>{dragged.content}</span><span>{dragged.size}</span></div>}
+        {dragged && (
+          <div className="board-card board-card-preview" data-mode={mode}
+            data-editor-selected={dragged.id === selectedItemId || undefined}
+            style={{ borderInlineStartColor: dragged.color ?? defaultColor }} aria-hidden="true">
+            <div className="board-card-action"><CardContents item={dragged} mode={mode} /></div>
+            {mode === 'Detailed' && dragged.link && <span className="board-card-link"><LinkLabel /></span>}
+          </div>
+        )}
       </DragOverlay>
-    </DndContext>
+      </DndContext>
+    </>
   );
 }

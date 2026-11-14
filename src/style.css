@@ -145,21 +145,86 @@ body {
 }
 
 .board-card {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
+  position: relative;
   width: 100%;
+  height: 60px;
   box-sizing: border-box;
-  padding: 8px;
   background: #fff;
-  color: inherit;
   border: 1px solid #d2d2d2;
+  border-inline-start-width: 5px;
   border-radius: 4px;
+}
+
+.board-card[data-mode="Detailed"] { height: 146px; }
+
+.board-card-action {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  border-radius: inherit;
   font: inherit;
   text-align: left;
   touch-action: none;
   cursor: grab;
 }
+
+.board-card-preview .board-card-action { cursor: grabbing; }
+
+.board-card-action:focus-visible, .board-card-link:focus-visible {
+  outline: 2px solid #245cb1;
+  outline-offset: 2px;
+}
+
+.board-card-heading {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 8px;
+  line-height: 20px;
+}
+
+.board-card-title, .board-card-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.board-card-title { min-width: 0; -webkit-line-clamp: 2; font-weight: 600; }
+
+.board-card-description {
+  width: 100%;
+  -webkit-line-clamp: 3;
+  font-size: 14px;
+  line-height: 16px;
+  white-space: pre-wrap;
+}
+
+.board-card-dates {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.board-card-link {
+  position: absolute;
+  bottom: 6px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #24568f;
+  font-size: 13px;
+}
+
+[aria-label="Board display"] { margin-top: 12px; }
+[aria-label="Board display"] [aria-pressed="true"] { font-weight: bold; }
 
 .roadmap-board[data-dragging] .board-card {
   transition: transform 170ms ease-out;
@@ -331,7 +396,6 @@ main {
   box-shadow: var(--roadmap-selection-ring);
 }
 
-.board-card[data-editor-selected]:focus-visible,
 .roadmap-label:focus-visible {
   outline-offset: 2px;
 }
@@ -348,4 +412,16 @@ main {
 #timeline-view .vis-item.vis-range.vis-selected {
   border-color: #97b0f8;
   background-color: #d5ddf6;
+}
+
+.roadmap-label-text, .roadmap-bar-text {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#timeline-view .vis-range .vis-item-content {
+  max-width: 100%;
 }

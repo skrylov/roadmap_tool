@@ -334,8 +334,11 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
   }
 
   function scheduleItem(event: DragEvent<HTMLDivElement>) {
-    const id = event.dataTransfer.getData(dragType);
-    if (!id || id !== draggedId.current) return;
+    // Native drags in credentialless previews can lose their custom MIME payload.
+    // Only accept a drag started by this Timeline; keep rejecting mismatched payloads.
+    const id = draggedId.current;
+    const transferredId = event.dataTransfer.getData(dragType);
+    if (!id || (transferredId && transferredId !== id)) return;
     event.preventDefault();
     event.stopPropagation();
 

@@ -189,11 +189,17 @@ export function TimelineMarkers({ active, timeline, container, toolbar, markers,
         `#timeline-view .vis-custom-time.${CSS.escape(id)} { --marker-color: ${color}; }`,
       ).join('\n')}</style>
       {toolbar && createPortal(
-        <button type="button" ref={addButton} onClick={(event) => open(event.currentTarget)}>Add marker</button>,
+        <button className="marker-toolbar-action" type="button" ref={addButton} onClick={(event) => open(event.currentTarget)}>
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 14V2m0 1c4-3 6 3 10 0v7c-4 3-6-3-10 0" />
+          </svg>
+          Add marker
+        </button>,
         toolbar,
       )}
       <div className="marker-strip" role="group" aria-label="Timeline markers"
-        style={{ marginLeft: geometry?.left, width: geometry?.width ?? 0 }} onPointerOver={showTruncatedText}>
+        style={{ marginLeft: geometry?.left, width: geometry?.width ?? 0,
+          '--sidebar-width': `${geometry?.left ?? 0}px` } as CSSProperties} onPointerOver={showTruncatedText}>
         {geometry && markers.map((marker) => {
           const date = preview?.id === marker.id ? preview.date : marker.date;
           const position = ((preview?.id === marker.id ? preview.time : +date) - geometry.start) /

@@ -203,7 +203,7 @@ export function Board({ items, onReorder, onEdit, selectedItemId, mode, onModeCh
 
   return (
     <>
-      <div role="group" aria-label="Board display">
+      <div className="workspace-toolbar segmented-control board-toolbar" role="group" aria-label="Board display">
         {(['Compact', 'Detailed'] as const).map((option) => (
           <button key={option} type="button" aria-pressed={mode === option} onClick={() => onModeChange(option)}>{option}</button>
         ))}

@@ -290,11 +290,6 @@ body {
   padding: 0;
 }
 
-.timeline-toolbar [aria-label="Calendar view"] {
-  border-inline-start: 1px solid #d2d2d2;
-  padding-inline-start: 8px;
-}
-
 /* Keep the label rows measurable and the native scroll panel intact. */
 [data-sidebar-hidden] .vis-panel.vis-left > .vis-content {
   width: 1px !important;
@@ -304,6 +299,17 @@ body {
 
 [data-sidebar-hidden] .vis-panel.vis-left .vis-labelset {
   width: max-content;
+}
+
+@supports (interpolate-size: allow-keywords) {
+  @media (prefers-reduced-motion: no-preference) {
+    #timeline-item-list > .vis-content {
+      interpolate-size: allow-keywords;
+      overflow: hidden;
+      transition: width 190ms ease-in-out, visibility 190ms;
+    }
+    #timeline-item-list .vis-labelset { width: max-content; }
+  }
 }
 
 @media (max-width: 600px) {
@@ -633,4 +639,239 @@ main {
 .marker-swatch:has(:focus-visible) {
   outline: 2px solid #235da9;
   outline-offset: 3px;
+}
+:root {
+  color-scheme: dark;
+  --app-bg: #1c1b19;
+  --surface: #232220;
+  --raised: #2b2926;
+  --hover: #33302d;
+  --selected: #3b3834;
+  --border: #413d38;
+  --divider: #302e2a;
+  --text: #ebe9e4;
+  --muted: #bcb6ad;
+  --focus: #d1bf9c;
+  --danger: #f2a29a;
+  --primary: #ebe9e4;
+  --primary-hover: #fffdf7;
+  --on-primary: #252320;
+  --space: 8px;
+  --gutter: clamp(12px, 2vw, 28px);
+  --control-height: 32px;
+  --radius: 5px;
+}
+
+body {
+  margin: 0;
+  background: var(--app-bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+main {
+  min-height: 100dvh;
+  padding-inline: var(--gutter);
+  box-sizing: border-box;
+}
+
+.app-header, .app-identity, .workspace-toolbar, .view-tabs, .segmented-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+}
+
+.app-header {
+  min-height: 54px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.app-identity { margin-inline-end: auto; }
+.app-brand { font-weight: 700; letter-spacing: -.025em; }
+.app-breadcrumb-divider { color: var(--muted); }
+.app-header h1 { margin: 0; font-size: inherit; font-weight: 500; }
+.view-tabs { border-bottom: 1px solid var(--divider); }
+
+.app-header button, .workspace-toolbar button, .view-tabs button,
+.workspace-disclosure > summary, .timeline-sidebar-toggle,
+.item-editor button:not(:where(.editor-colors button, .editor-unschedule)), .marker-editor button {
+  box-sizing: border-box;
+  min-height: var(--control-height);
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  user-select: none;
+  cursor: pointer;
+}
+
+.app-header button:hover, .workspace-toolbar button:hover, .view-tabs button:hover,
+.workspace-disclosure > summary:hover, .workspace-disclosure[open] > summary, .timeline-sidebar-toggle:hover,
+.item-editor button:not(:where(.editor-colors button, .editor-unschedule)):where(:hover), .marker-editor button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.app-header .button-primary, .item-editor button[type="submit"], .marker-editor button[type="submit"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+  font-weight: 600;
+}
+
+.app-header .button-primary:hover, .item-editor button[type="submit"]:hover, .marker-editor button[type="submit"]:hover {
+  background: var(--primary-hover);
+  color: var(--on-primary);
+}
+
+:where(main button, main summary, main input, main textarea, main a, .roadmap-label):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.view-tabs button {
+  min-height: 38px;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+}
+
+.view-tabs button[aria-pressed="true"] {
+  color: var(--text);
+  border-bottom-color: var(--primary);
+  font-weight: 600;
+}
+
+.workspace-toolbar {
+  min-height: 48px;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
+.segmented-control {
+  gap: 2px;
+}
+
+.segmented-control button[aria-pressed="true"] {
+  color: var(--text);
+  background: var(--selected);
+}
+
+.board-toolbar[aria-label="Board display"] { margin-top: 0; }
+.timeline-help { position: relative; margin-inline-start: auto; }
+.workspace-toolbar .timeline-help-button, .workspace-disclosure > .header-more-options {
+  display: grid;
+  place-items: center;
+  width: var(--control-height);
+  padding: 0;
+}
+
+.app-header .header-add-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-inline: calc(var(--space) * 1.75);
+  white-space: nowrap;
+}
+
+/* This transparent area bridges the gap between the icon and the popover. */
+.timeline-help-popover {
+  position: absolute;
+  z-index: 22;
+  inset-block-start: 100%;
+  inset-inline-end: 0;
+  width: min(290px, 70vw);
+  padding-block-start: 4px;
+}
+.timeline-help-popover .workspace-popover { position: static; width: 100%; }
+.marker-toolbar-action { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+.workspace-disclosure { position: relative; }
+.workspace-disclosure > summary {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.workspace-disclosure > summary::-webkit-details-marker { display: none; }
+.workspace-popover {
+  position: absolute;
+  z-index: 22;
+  inset-inline-end: 0;
+  inset-block-start: calc(100% + 4px);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(290px, 70vw);
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--raised);
+  color: var(--text);
+  line-height: 1.5;
+}
+.workspace-popover:has(.workspace-menu-toggle) { padding: 4px; }
+.app-header .workspace-menu-toggle {
+  display: grid;
+  grid-template-columns: 1fr 16px;
+  align-items: center;
+  gap: var(--space);
+  width: 100%;
+  text-align: start;
+  color: var(--text);
+}
+
+.marker-strip { margin-top: 0; }
+.timeline-toolbar .timeline-sidebar-toggle {
+  min-width: var(--control-height);
+  padding: 0;
+}
+.timeline-toolbar .segmented-control {
+  border-inline-start: 1px solid var(--divider);
+  padding-inline-start: var(--space);
+}
+
+#timeline-view .vis-timeline { background: var(--surface); }
+#timeline-view :is(.vis-timeline, .vis-panel, .vis-labelset .vis-label, .vis-time-axis .vis-grid) {
+  border-color: var(--border);
+}
+#timeline-view .vis-time-axis .vis-grid.vis-minor { border-color: var(--divider); }
+#timeline-view :is(.vis-time-axis .vis-text, .vis-labelset .vis-label) { color: var(--muted); }
+#timeline-view :is(.vis-labelset .vis-label, .vis-panel.vis-top, .marker-strip) { background: var(--surface); }
+.marker-strip::before {
+  content: '';
+  position: absolute;
+  inset: 0 100% 0 calc(-1 * var(--sidebar-width, 0px));
+  background: var(--surface);
+}
+#timeline-view .vis-item.roadmap-weekend { background: rgb(0 0 0 / 16%); }
+#timeline-view .vis-item.vis-range { color: var(--on-primary); }
+
+.roadmap-label, .board-column, .board-card:not(.board-card-preview) {
+  background: var(--surface);
+  border-color: var(--border);
+}
+.roadmap-label, .roadmap-category { color: var(--text); }
+.roadmap-label:hover, .roadmap-category:hover, .board-card:not(.board-card-preview):hover { background: var(--raised); }
+.roadmap-board { margin-top: 0; }
+.board-column h2 { color: var(--muted); }
+.board-card:not(.board-card-preview) .board-card-link { color: var(--focus); }
+.board-card-preview { color: var(--on-primary); color-scheme: light; }
+.board-empty, .editor-primary small, .editor-unschedule { color: var(--muted); }
+
+.item-editor, .marker-editor, .item-editor dialog {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+  box-shadow: 0 6px 18px #0004;
+}
+.item-editor footer, .editor-segments label { border-color: var(--border); }
+.editor-segments label:has(:checked) { background: var(--selected); }
+.item-editor button.editor-delete, .editor-error, .marker-editor [role="alert"] { color: var(--danger); }
+.item-editor :is(input:not([type="radio"], [type="checkbox"]), textarea), .marker-editor input:not([type="radio"]) {
+  padding: 4px 6px;
+  background: var(--app-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }

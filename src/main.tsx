@@ -39,6 +39,16 @@ function App() {
   const [includeWeekends, setIncludeWeekends] = useState(startup.initial.includeWeekends);
   const [storageWarning, setStorageWarning] = useState(startup.warning);
   const lastSaved = useRef(startup.initial);
+  const moreOptions = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    function dismissOutside(event: PointerEvent) {
+      const menu = moreOptions.current;
+      if (menu?.open && event.target instanceof Node && !menu.contains(event.target)) menu.open = false;
+    }
+    document.addEventListener('pointerdown', dismissOutside, true);
+    return () => document.removeEventListener('pointerdown', dismissOutside, true);
+  }, []);
 
   useEffect(() => {
     if (startup.warning) return;
@@ -122,18 +132,50 @@ function App() {
 
   return (
     <main>
-      <h1>Roadmap Tool</h1>
+      <header className="app-header">
+        <div className="app-identity">
+          <span className="app-brand">last_rm</span>
+          <span className="app-breadcrumb-divider" aria-hidden="true">/</span>
+          <h1>Roadmap</h1>
+        </div>
+        <details ref={moreOptions} className="workspace-disclosure" onKeyDown={(event) => {
+          if (event.key !== 'Escape' || !event.currentTarget.open) return;
+          event.preventDefault();
+          event.currentTarget.open = false;
+          event.currentTarget.querySelector('summary')?.focus();
+        }}>
+          <summary className="header-more-options" aria-label="More options" title="More options">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <circle cx="3" cy="8" r="1.3" />
+              <circle cx="8" cy="8" r="1.3" />
+              <circle cx="13" cy="8" r="1.3" />
+            </svg>
+          </summary>
+          <div className="workspace-popover">
+            <button className="workspace-menu-toggle" type="button" aria-pressed={includeWeekends}
+              onClick={() => setIncludeWeekends((enabled) => !enabled)}>
+              Count weekends toward duration
+              {includeWeekends && (
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <path d="m3.5 8.5 3 3 6-7" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </details>
+        <button className="button-primary header-add-item" type="button" onClick={() => request({ action: 'open' })}>
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+            <path d="M3 8h10M8 3v10" />
+          </svg>
+          Add item
+        </button>
+      </header>
       {storageWarning && <p className="editor-error" role="alert">{storageWarning}</p>}
-      <div role="group" aria-label="Roadmap view">
-        {(['Board', 'Timeline'] as const).map((name) => (
+      <div className="view-tabs" role="group" aria-label="Roadmap view">
+        {(['Timeline', 'Board'] as const).map((name) => (
           <button key={name} type="button" aria-pressed={view === name} onClick={() => setView(name)}>{name}</button>
         ))}
       </div>
-      <button type="button" onClick={() => request({ action: 'open' })}>Add item</button>
-      <label>
-        <input type="checkbox" checked={includeWeekends} onChange={(event) => setIncludeWeekends(event.target.checked)} />
-        Count weekends toward duration
-      </label>
       <RoadmapTimeline active={view === 'Timeline'} roadmapItems={items}
         setRoadmapItems={setItems} includeWeekends={includeWeekends} onEdit={editItem} selectedItemId={selectedItemId}
         markers={markers} onSaveMarker={(marker) => setMarkers((current) => current.some(({ id }) => id === marker.id)

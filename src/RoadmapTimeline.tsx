@@ -47,10 +47,31 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
   const getInitialItems = useEffectEvent(() => roadmapItems);
   const scrollPosition = useRef(0);
   const [sidebarVisible, setSidebarVisible] = useState(true);
+  const help = useRef<HTMLDivElement>(null);
+  const [helpMode, setHelpMode] = useState<'hover' | 'focus' | 'touch' | null>(null);
+  const helpVisible = helpMode !== null;
   const preview = useDragPreview(container, roadmapItems);
   const { ghost, ghostElement, point, insertion, scrolling } = preview;
   const axisView = useRef<CalendarView>('Month');
   const [selectedView, setSelectedView] = useState<CalendarView | null>('Month');
+
+  useEffect(() => {
+    if (!active || !helpVisible) return;
+    function dismissOutside(event: PointerEvent) {
+      if (event.target instanceof Node && !help.current?.contains(event.target)) setHelpMode(null);
+    }
+    function dismissOnEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      if (event.target instanceof Node && help.current?.contains(event.target)) event.preventDefault();
+      setHelpMode(null);
+    }
+    document.addEventListener('pointerdown', dismissOutside, true);
+    document.addEventListener('keydown', dismissOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', dismissOutside, true);
+      document.removeEventListener('keydown', dismissOnEscape);
+    };
+  }, [active, helpVisible]);
 
   useEffect(() => {
     const initialWindow = windowFor('Month', contextDate.current);
@@ -101,7 +122,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
       zoomMax,
       verticalScroll: true,
       horizontalScroll: true,
-      maxHeight: 420,
+      maxHeight: 'max(240px, calc(100dvh - 224px))',
       showCurrentTime: false,
       groupTemplate(group: DataGroup) {
         const children = group.nestedGroups;
@@ -302,6 +323,22 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
     return () => sidebar.removeEventListener('scroll', rememberScroll);
   }, [active, sidebarVisible]);
 
+  useEffect(() => {
+    if (!active) return;
+    const content = container.current?.querySelector('.vis-panel.vis-left > .vis-content');
+    if (!content) return;
+    // The library derives its calendar layout from the measured sidebar width.
+    // The outer Timeline does not resize when this inner panel animates.
+    let width = content.getBoundingClientRect().width;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry.contentRect.width === width) return;
+      width = entry.contentRect.width;
+      timeline.current?.redraw();
+    });
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [active]);
+
   function selectView(preset: CalendarView) {
     const view = timeline.current;
     if (!view) return;
@@ -439,7 +476,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
   const sidebarAction = sidebarVisible ? 'Hide item list' : 'Show item list';
 
   return (
-    <section hidden={!active} id="timeline-view" aria-label="Timeline">
+    <section hidden={!active} id="timeline-view" aria-label="Timeline" data-sidebar-hidden={!sidebarVisible || undefined}>
       {selectedItemId && (
         <style>{`
           #timeline-view .roadmap-label[data-item-id="${CSS.escape(selectedItemId)}"],
@@ -452,8 +489,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
           }
         `}</style>
       )}
-      <p>Drag between rows to reorder. Drop an unscheduled item onto its own timeline row to schedule it. Drag bars sideways to change dates or drag their edges to resize.</p>
-      <div className="timeline-toolbar">
+      <div className="workspace-toolbar timeline-toolbar">
         <button type="button" className="timeline-sidebar-toggle" title={sidebarAction}
           aria-label={sidebarAction} aria-expanded={sidebarVisible} aria-controls="timeline-item-list"
           onClick={() => setSidebarVisible((visible) => !visible)}>
@@ -464,12 +500,31 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
             <path d={sidebarVisible ? 'm16 9-3 3 3 3' : 'm13 9 3 3-3 3'} />
           </svg>
         </button>
-        <div role="group" aria-label="Calendar view">
+        <div className="segmented-control" role="group" aria-label="Calendar view">
           {calendarViews.map((preset) => (
             <button key={preset} type="button" aria-pressed={selectedView === preset} onClick={() => selectView(preset)}>
               {preset}
             </button>
           ))}
+        </div>
+        <div ref={help} className="timeline-help"
+          onPointerEnter={(event) => { if (event.pointerType === 'mouse') setHelpMode('hover'); }}
+          onPointerLeave={(event) => { if (event.pointerType === 'mouse') setHelpMode(null); }}>
+          <button type="button" className="timeline-help-button" aria-label="Timeline help" aria-describedby="timeline-guidance"
+            onFocus={(event) => { if (event.currentTarget.matches(':focus-visible')) setHelpMode('focus'); }}
+            onBlur={() => setHelpMode(null)}
+            onClick={(event) => {
+              const touch = 'pointerType' in event.nativeEvent && event.nativeEvent.pointerType === 'touch';
+              setHelpMode((current) => touch ? current === 'touch' ? null : 'touch' : current ?? 'focus');
+            }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.5" />
+              <path d="M8 7.25v4.25M8 4.5v1" />
+            </svg>
+          </button>
+          <div className="timeline-help-popover" hidden={!helpVisible}>
+            <p id="timeline-guidance" className="workspace-popover" role="tooltip">Drag between rows to reorder. Drop an unscheduled item onto its own timeline row to schedule it. Drag bars sideways to change dates or drag their edges to resize.</p>
+          </div>
         </div>
         <div ref={setMarkerToolbar} />
       </div>
@@ -482,7 +537,6 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
         onDragOverCapture={allowDrop}
         onDropCapture={scheduleItem}
         className={ghost ? 'roadmap-reordering' : undefined}
-        data-sidebar-hidden={!sidebarVisible || undefined}
         onPointerDownCapture={startBarDrag}
         onClickCapture={(event) => {
           const click = clickItem.current;

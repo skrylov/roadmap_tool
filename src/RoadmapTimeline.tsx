@@ -474,6 +474,16 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
         `}</style>
       )}
       <div className="workspace-toolbar timeline-toolbar">
+        <button type="button" className="timeline-sidebar-toggle" title={sidebarAction}
+          aria-label={sidebarAction} aria-expanded={sidebarVisible} aria-controls="timeline-item-list"
+          onClick={() => setSidebarVisible((visible) => !visible)}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="M9 5v14" />
+            <path d={sidebarVisible ? 'm16 9-3 3 3 3' : 'm13 9 3 3-3 3'} />
+          </svg>
+        </button>
         <div className="segmented-control" role="group" aria-label="Calendar view">
           {calendarViews.map((preset) => (
             <button key={preset} type="button" aria-pressed={selectedView === preset} onClick={() => selectView(preset)}>
@@ -503,19 +513,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
         <div ref={setMarkerToolbar} />
       </div>
       <TimelineMarkers active={active} timeline={markerTimeline} container={container} toolbar={markerToolbar}
-        markers={markers} onSave={onSaveMarker} onDelete={onDeleteMarker}
-        sidebarControl={
-          <button type="button" className="timeline-sidebar-toggle" title={sidebarAction}
-            aria-label={sidebarAction} aria-expanded={sidebarVisible} aria-controls="timeline-item-list"
-            onClick={() => setSidebarVisible((visible) => !visible)}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-              strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="3" y="5" width="18" height="14" rx="2" />
-              <path d="M9 5v14" />
-              <path d={sidebarVisible ? 'm16 9-3 3 3 3' : 'm13 9 3 3-3 3'} />
-            </svg>
-          </button>
-        } />
+        markers={markers} onSave={onSaveMarker} onDelete={onDeleteMarker} />
       <div
         ref={container}
         aria-label="Roadmap timeline"

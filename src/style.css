@@ -799,30 +799,25 @@ main {
   color: var(--text);
   line-height: 1.5;
 }
-.workspace-popover label { display: flex; align-items: center; gap: var(--space); }
+.workspace-popover:has(.workspace-menu-toggle) { padding: 4px; }
+.app-header .workspace-menu-toggle {
+  display: grid;
+  grid-template-columns: 1fr 16px;
+  align-items: center;
+  gap: var(--space);
+  width: 100%;
+  text-align: start;
+  color: var(--text);
+}
 
 .marker-strip { margin-top: 0; }
-.timeline-sidebar-rail {
-  position: relative;
-  width: 0;
-  height: 30px;
-}
-.timeline-sidebar-toggle {
-  position: absolute;
-  inset-inline-end: 100%;
-  inset-block-end: 0;
-  width: 34px;
-  min-width: 34px;
-  min-height: 30px;
+.timeline-toolbar .timeline-sidebar-toggle {
+  min-width: var(--control-height);
   padding: 0;
-  border-color: var(--border);
-  border-radius: var(--radius) 0 0 0;
-  background: var(--surface);
 }
-#timeline-view[data-sidebar-hidden] .timeline-sidebar-toggle {
-  inset-inline-end: auto;
-  inset-inline-start: 0;
-  border-radius: var(--radius);
+.timeline-toolbar .segmented-control {
+  border-inline-start: 1px solid var(--divider);
+  padding-inline-start: var(--space);
 }
 
 #timeline-view .vis-timeline { background: var(--surface); }

@@ -142,10 +142,15 @@ function App() {
             </svg>
           </summary>
           <div className="workspace-popover">
-            <label>
-              <input type="checkbox" checked={includeWeekends} onChange={(event) => setIncludeWeekends(event.target.checked)} />
+            <button className="workspace-menu-toggle" type="button" aria-pressed={includeWeekends}
+              onClick={() => setIncludeWeekends((enabled) => !enabled)}>
               Count weekends toward duration
-            </label>
+              {includeWeekends && (
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <path d="m3.5 8.5 3 3 6-7" />
+                </svg>
+              )}
+            </button>
           </div>
         </details>
         <button className="button-primary header-add-item" type="button" onClick={() => request({ action: 'open' })}>

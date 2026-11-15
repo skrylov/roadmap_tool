@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState, type Dispatch, type DragEvent, type SetStateAction } from 'react';
 import { DataSet } from 'vis-data';
-import { Timeline, type DataGroup, type DataItem } from 'vis-timeline';
+import { Timeline, type DataGroup, type DataItem, type TimelineAnimationOptions } from 'vis-timeline';
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
 import { addDays, editRange, scheduleRange, sizeDays, startOfDay, type DateRange } from './calendar';
 import { axisFor, axisForSpan, calendarViews, windowFor, zoomMax, zoomMin, type CalendarView } from './calendarViews';
@@ -11,8 +11,9 @@ import { showTruncatedText } from './truncatedText';
 import type { Marker } from './MarkerEditor';
 import { TimelineMarkers } from './TimelineMarkers';
 import { useDragPreview } from './useDragPreview';
+import { defaultColor } from './itemDraft';
 
-type TimelineGroup = DataGroup & { order: number; nestedInGroup?: string };
+type TimelineGroup = DataGroup & { order: number; nestedInGroup?: string; color?: string };
 type BarDrag = { id: string; x: number; y: number; pointerId: number; cancelled?: boolean; mode?: 'time' | 'reorder' };
 
 function groupId(category: string) {
@@ -20,6 +21,12 @@ function groupId(category: string) {
 }
 
 const dragType = 'application/x-roadmap-item';
+
+function calendarAnimation(): TimelineAnimationOptions {
+  return { animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ? false
+    : { duration: 220, easingFunction: 'easeInOutQuad' } };
+}
 
 type Props = {
   active: boolean;
@@ -88,7 +95,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
           nestedGroups: children.map(({ id }) => id),
           showNested: true,
         },
-        ...children.map(({ id, content, size, order }) => ({ id, content: `${content} (${size})`, order })),
+        ...children.map(({ id, content, size, order, color = defaultColor }) => ({ id, content: `${content} (${size})`, order, color })),
       ];
     }));
     timelineGroups.current = groups;
@@ -124,7 +131,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
       horizontalScroll: true,
       maxHeight: 'max(240px, calc(100dvh - 224px))',
       showCurrentTime: false,
-      groupTemplate(group: DataGroup) {
+      groupTemplate(group: TimelineGroup) {
         const children = group.nestedGroups;
         if (children) {
           const expanded = group.showNested !== false;
@@ -152,6 +159,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
 
         const label = document.createElement('div');
         label.className = 'roadmap-label';
+        label.style.setProperty('--roadmap-item-color', group.color ?? defaultColor);
         const text = document.createElement('span');
         text.textContent = String(group.content);
         text.className = 'roadmap-label-text';
@@ -204,16 +212,29 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
           });
         }
       }
-      items.remove([...shaded].filter((id) => !next.has(id)));
-      items.add(additions);
+      const removals = [...shaded].filter((id) => !next.has(id));
+      if (additions.length) items.add(additions);
+      if (removals.length) items.remove(removals);
       shaded = next;
     }
 
     shadeWeekends(initialWindow.start, initialWindow.end);
-    view.on('rangechanged', ({ start, end, byUser }: DateRange & { byUser: boolean }) => {
+    let pendingWeekendWindow: DateRange | undefined;
+    view.on('changed', () => {
+      if (!pendingWeekendWindow) return;
+      const { start, end } = pendingWeekendWindow;
+      pendingWeekendWindow = undefined;
       shadeWeekends(start, end);
-      if (!byUser) return;
+    });
+    view.on('rangechanged', ({ start, end, byUser }: DateRange & { byUser: boolean }) => {
+      if (!byUser) {
+        // A dataset update here can move bars one frame ahead of the guides.
+        pendingWeekendWindow = { start, end };
+        return;
+      }
 
+      pendingWeekendWindow = undefined;
+      shadeWeekends(start, end);
       contextDate.current = new Date((start.getTime() + end.getTime()) / 2);
       setSelectedView(null);
       const viewForSpan = axisForSpan(end.getTime() - start.getTime());
@@ -276,7 +297,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
     if (!active) return;
     const items = timelineItems.current;
     const bars = roadmapItems.flatMap(({ id, content, start, end, color }) =>
-      start && end ? [{ id, group: id, content, start, end, style: color ? `background-color: ${color}` : '' }] : [],
+      start && end ? [{ id, group: id, content, start, end, style: `--roadmap-item-color: ${color ?? defaultColor}` }] : [],
     );
     if (items) {
       // Weekend backgrounds share the dataset and are managed by shadeWeekends.
@@ -290,13 +311,13 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
         const children = roadmapItems.filter((item) => item.category === category);
         const nestedGroups = children.map(({ id }) => id);
         const expanded = parent?.showNested !== false;
-        const changed: Partial<TimelineGroup>[] = children.flatMap(({ id, order, content: title, size }) => {
+        const changed: Partial<TimelineGroup>[] = children.flatMap(({ id, order, content: title, size, color = defaultColor }) => {
           const content = `${title} (${size})`;
           const row = groups.get(id);
           const visible = expanded;
-          return row && row.content === content && row.order === order && row.nestedInGroup === groupId(category)
+          return row && row.content === content && row.order === order && row.color === color && row.nestedInGroup === groupId(category)
             && (row.visible !== false) === visible
-            ? [] : [{ id, content, order, visible, nestedInGroup: groupId(category) }];
+            ? [] : [{ id, content, order, visible, color, nestedInGroup: groupId(category) }];
         });
         if (parent?.nestedGroups?.join() !== nestedGroups.join()) {
           changed.push({ id: groupId(category), nestedGroups });
@@ -345,8 +366,15 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
     const { start, end } = windowFor(preset, contextDate.current);
     axisView.current = preset;
     view.setOptions(axisFor(preset));
-    view.setWindow(start, end, { animation: false });
+    view.setWindow(start, end, calendarAnimation());
     setSelectedView(preset);
+  }
+
+  function goToToday() {
+    if (!timeline.current) return;
+    const today = startOfDay(new Date());
+    contextDate.current = today;
+    timeline.current.moveTo(today, calendarAnimation());
   }
 
   function getDropTime(event: DragEvent<HTMLDivElement>, id: string) {
@@ -490,22 +518,34 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
         `}</style>
       )}
       <div className="workspace-toolbar timeline-toolbar">
-        <button type="button" className="timeline-sidebar-toggle" title={sidebarAction}
-          aria-label={sidebarAction} aria-expanded={sidebarVisible} aria-controls="timeline-item-list"
-          onClick={() => setSidebarVisible((visible) => !visible)}>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <rect x="3" y="5" width="18" height="14" rx="2" />
-            <path d="M9 5v14" />
-            <path d={sidebarVisible ? 'm16 9-3 3 3 3' : 'm13 9 3 3-3 3'} />
-          </svg>
-        </button>
-        <div className="segmented-control" role="group" aria-label="Calendar view">
-          {calendarViews.map((preset) => (
-            <button key={preset} type="button" aria-pressed={selectedView === preset} onClick={() => selectView(preset)}>
-              {preset}
+        <div className="timeline-navigation">
+          <button type="button" className="timeline-sidebar-toggle" title={sidebarAction}
+            aria-label={sidebarAction} aria-expanded={sidebarVisible} aria-controls="timeline-item-list"
+            onClick={() => setSidebarVisible((visible) => !visible)}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+              strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="M9 5v14" />
+              <path d={sidebarVisible ? 'm16 9-3 3 3 3' : 'm13 9 3 3-3 3'} />
+            </svg>
+          </button>
+          <div className="segmented-control" role="group" aria-label="Calendar view">
+            {calendarViews.map((preset) => (
+              <button key={preset} type="button" aria-pressed={selectedView === preset} onClick={() => selectView(preset)}>
+                {preset}
+              </button>
+            ))}
+          </div>
+          <div className="timeline-today">
+            <button type="button" onClick={goToToday}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="7" />
+                <circle cx="12" cy="12" r="2" />
+                <path d="M12 2v3m0 14v3M2 12h3m14 0h3" />
+              </svg>
+              Today
             </button>
-          ))}
+          </div>
         </div>
         <div ref={help} className="timeline-help"
           onPointerEnter={(event) => { if (event.pointerType === 'mouse') setHelpMode('hover'); }}

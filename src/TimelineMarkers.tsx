@@ -51,11 +51,9 @@ export function TimelineMarkers({ active, timeline, container, toolbar, markers,
     const observer = new ResizeObserver(measure);
     observer.observe(center);
     timeline.on('changed', measure);
-    timeline.on('rangechange', measure);
     return () => {
       observer.disconnect();
       timeline.off('changed', measure);
-      timeline.off('rangechange', measure);
     };
   }, [active, container, timeline]);
 
@@ -211,6 +209,7 @@ export function TimelineMarkers({ active, timeline, container, toolbar, markers,
               hidden={!visible && preview?.id !== marker.id}
               aria-label={`${marker.name}, ${dateInput(date)}`}
               data-marker-dragging={dragging || undefined}
+              data-marker-selected={editor?.marker?.id === marker.id || undefined}
               style={{ left: `${position}px`, '--marker-color': marker.color,
                 '--marker-right-space': `${geometry.width - position}px` } as CSSProperties}
               onPointerDown={(event) => startDrag(event, marker)}

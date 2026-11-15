@@ -1,7 +1,7 @@
 import { dateInput, scheduleEndingOn, scheduleRange, sizeDays } from './calendar';
 import type { Category, RoadmapItem } from './prototypeItems';
 
-export const defaultColor = '#d5ddf6';
+export const defaultColor = '#7fa6d3';
 export const itemColors = [defaultColor, '#c1e8d1', '#ffe1ab', '#fac6cb', '#dfcff3'];
 export const limits = { content: 120, description: 600, rationale: 600, link: 2048 };
 

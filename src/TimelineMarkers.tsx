@@ -198,10 +198,12 @@ export function TimelineMarkers({ active, timeline, container, toolbar, sidebarC
         </button>,
         toolbar,
       )}
+      <div className="timeline-sidebar-rail" style={{ insetInlineStart: geometry?.left ?? 0 }}>
+        {sidebarControl}
+      </div>
       <div className="marker-strip" role="group" aria-label="Timeline markers"
         style={{ marginLeft: geometry?.left, width: geometry?.width ?? 0,
           '--sidebar-width': `${geometry?.left ?? 0}px` } as CSSProperties} onPointerOver={showTruncatedText}>
-        {sidebarControl}
         {geometry && markers.map((marker) => {
           const date = preview?.id === marker.id ? preview.date : marker.date;
           const position = ((preview?.id === marker.id ? preview.time : +date) - geometry.start) /

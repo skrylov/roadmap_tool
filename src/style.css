@@ -748,7 +748,32 @@ main {
 }
 
 .board-toolbar[aria-label="Board display"] { margin-top: 0; }
-.timeline-help { margin-inline-start: auto; }
+.timeline-help { position: relative; margin-inline-start: auto; }
+.workspace-toolbar .timeline-help-button, .workspace-disclosure > .header-more-options {
+  display: grid;
+  place-items: center;
+  width: var(--control-height);
+  padding: 0;
+}
+
+.app-header .header-add-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-inline: calc(var(--space) * 1.75);
+  white-space: nowrap;
+}
+
+/* This transparent area bridges the gap between the icon and the popover. */
+.timeline-help-popover {
+  position: absolute;
+  z-index: 22;
+  inset-block-start: 100%;
+  inset-inline-end: 0;
+  width: min(290px, 70vw);
+  padding-block-start: 4px;
+}
+.timeline-help-popover .workspace-popover { position: static; width: 100%; }
 .marker-toolbar-action { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 
 .workspace-disclosure { position: relative; }
@@ -777,6 +802,11 @@ main {
 .workspace-popover label { display: flex; align-items: center; gap: var(--space); }
 
 .marker-strip { margin-top: 0; }
+.timeline-sidebar-rail {
+  position: relative;
+  width: 0;
+  height: 30px;
+}
 .timeline-sidebar-toggle {
   position: absolute;
   inset-inline-end: 100%;
@@ -792,10 +822,8 @@ main {
 #timeline-view[data-sidebar-hidden] .timeline-sidebar-toggle {
   inset-inline-end: auto;
   inset-inline-start: 0;
-  inset-block-end: calc(100% + 8px);
   border-radius: var(--radius);
 }
-#timeline-view[data-sidebar-hidden] .timeline-toolbar { padding-inline-start: 40px; }
 
 #timeline-view .vis-timeline { background: var(--surface); }
 #timeline-view :is(.vis-timeline, .vis-panel, .vis-labelset .vis-label, .vis-time-axis .vis-grid) {

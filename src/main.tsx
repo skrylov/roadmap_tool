@@ -128,8 +128,19 @@ function App() {
           <span className="app-breadcrumb-divider" aria-hidden="true">/</span>
           <h1>Roadmap</h1>
         </div>
-        <details className="workspace-disclosure">
-          <summary>Settings</summary>
+        <details className="workspace-disclosure" onKeyDown={(event) => {
+          if (event.key !== 'Escape' || !event.currentTarget.open) return;
+          event.preventDefault();
+          event.currentTarget.open = false;
+          event.currentTarget.querySelector('summary')?.focus();
+        }}>
+          <summary className="header-more-options" aria-label="More options" title="More options">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <circle cx="3" cy="8" r="1.3" />
+              <circle cx="8" cy="8" r="1.3" />
+              <circle cx="13" cy="8" r="1.3" />
+            </svg>
+          </summary>
           <div className="workspace-popover">
             <label>
               <input type="checkbox" checked={includeWeekends} onChange={(event) => setIncludeWeekends(event.target.checked)} />
@@ -137,7 +148,12 @@ function App() {
             </label>
           </div>
         </details>
-        <button className="button-primary" type="button" onClick={() => request({ action: 'open' })}>Add item</button>
+        <button className="button-primary header-add-item" type="button" onClick={() => request({ action: 'open' })}>
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+            <path d="M3 8h10M8 3v10" />
+          </svg>
+          Add item
+        </button>
       </header>
       {storageWarning && <p className="editor-error" role="alert">{storageWarning}</p>}
       <div className="view-tabs" role="group" aria-label="Roadmap view">

@@ -47,6 +47,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
   const getInitialItems = useEffectEvent(() => roadmapItems);
   const scrollPosition = useRef(0);
   const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [helpVisible, setHelpVisible] = useState(false);
   const preview = useDragPreview(container, roadmapItems);
   const { ghost, ghostElement, point, insertion, scrolling } = preview;
   const axisView = useRef<CalendarView>('Month');
@@ -101,7 +102,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
       zoomMax,
       verticalScroll: true,
       horizontalScroll: true,
-      maxHeight: 'max(240px, calc(100dvh - 194px))',
+      maxHeight: 'max(240px, calc(100dvh - 224px))',
       showCurrentTime: false,
       groupTemplate(group: DataGroup) {
         const children = group.nestedGroups;
@@ -460,10 +461,28 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
             </button>
           ))}
         </div>
-        <details className="workspace-disclosure timeline-help">
-          <summary>Help</summary>
-          <p className="workspace-popover">Drag between rows to reorder. Drop an unscheduled item onto its own timeline row to schedule it. Drag bars sideways to change dates or drag their edges to resize.</p>
-        </details>
+        <div className="timeline-help"
+          onPointerEnter={(event) => { if (event.pointerType === 'mouse') setHelpVisible(true); }}
+          onPointerLeave={(event) => { if (event.pointerType === 'mouse') setHelpVisible(false); }}>
+          <button type="button" className="timeline-help-button" aria-label="Timeline help" aria-describedby="timeline-guidance"
+            onFocus={(event) => { if (event.currentTarget.matches(':focus-visible')) setHelpVisible(true); }}
+            onBlur={() => setHelpVisible(false)}
+            onClick={() => setHelpVisible(true)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape' && helpVisible) {
+                event.preventDefault();
+                setHelpVisible(false);
+              }
+            }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.5" />
+              <path d="M8 7.25v4.25M8 4.5v1" />
+            </svg>
+          </button>
+          <div className="timeline-help-popover" hidden={!helpVisible}>
+            <p id="timeline-guidance" className="workspace-popover" role="tooltip">Drag between rows to reorder. Drop an unscheduled item onto its own timeline row to schedule it. Drag bars sideways to change dates or drag their edges to resize.</p>
+          </div>
+        </div>
         <div ref={setMarkerToolbar} />
       </div>
       <TimelineMarkers active={active} timeline={markerTimeline} container={container} toolbar={markerToolbar}

@@ -110,8 +110,8 @@ export function MarkerEditor({ marker, active, anchor, onClose, onSave, onDelete
         <div className="marker-confirmation" role="group" aria-label={confirmation.message}>
           <p>{confirmation.message}</p>
           <footer>
-            <button ref={keep} type="button" onClick={() => setConfirmation(undefined)}>Keep editing</button>
-            <button type="button" onClick={() => close(confirmation.apply)}>{confirmation.label}</button>
+            <button ref={keep} type="button" className="editor-keep-editing" onClick={() => setConfirmation(undefined)}>Keep editing</button>
+            <button type="button" className="editor-destructive" onClick={() => close(confirmation.apply)}>{confirmation.label}</button>
           </footer>
         </div>
       ) : (

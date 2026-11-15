@@ -395,19 +395,19 @@ body {
   display: flex;
   align-items: flex-start;
   flex-wrap: wrap;
+  justify-content: space-between;
   gap: 12px 18px;
 }
+.editor-size-color > fieldset:last-child { margin-inline-start: auto; }
+.editor-size-color > fieldset:last-child legend { margin-inline-start: auto; }
+.editor-size-color .editor-colors { justify-content: flex-end; }
 
-.editor-schedule {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
 .editor-schedule summary {
   display: flex;
   align-items: center;
   gap: var(--space);
   min-height: var(--control-height);
-  padding-inline: 8px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-weight: 600;
 }
@@ -424,10 +424,10 @@ body {
 .editor-schedule details[open] summary::before { transform: rotate(45deg); }
 .editor-schedule summary:hover { background: var(--hover); }
 .editor-schedule summary small { margin-inline-start: auto; color: var(--muted); font-weight: 400; }
-.editor-schedule .editor-pair { padding: 8px; border-top: 1px solid var(--divider); }
-.editor-schedule > .editor-error { display: block; padding: 0 8px 6px; }
+.editor-schedule .editor-pair { padding-block: 6px; }
+.editor-schedule > .editor-error { display: block; margin-top: 4px; }
 .editor-unschedule {
-  margin: 0 8px 5px;
+  margin-top: 2px;
   padding: 3px 0;
   border: 0;
   background: none;
@@ -453,11 +453,12 @@ body {
   display: grid;
   place-items: center;
   box-sizing: border-box;
-  min-width: 29px;
-  min-height: 27px;
+  min-width: 35px;
+  min-height: 30px;
   padding: 0 8px;
   border: 1px solid transparent;
   border-radius: calc(var(--radius) - 1px);
+  font-size: 13px;
   cursor: pointer;
   transition: background-color 160ms ease-in-out, color 160ms ease-in-out, border-color 160ms ease-in-out;
 }
@@ -488,6 +489,7 @@ body {
   gap: 8px;
   min-height: 33px;
 }
+.editor-size-color .editor-colors { min-height: 36px; }
 .editor-colors .editor-swatch {
   position: relative;
   box-sizing: border-box;
@@ -514,11 +516,12 @@ body {
   justify-content: flex-end;
 }
 .item-editor footer { align-items: flex-start; }
-:is(.item-editor, .marker-editor) footer > .editor-delete, .item-editor footer > label {
+:is(.item-editor, .marker-editor) footer > .editor-delete, .item-editor .editor-create-another {
   margin-inline-end: auto;
 }
-.item-editor footer > label { display: inline-flex; align-items: center; gap: 4px; min-height: var(--control-height); }
-.editor-primary { display: grid; justify-items: center; gap: 2px; }
+.editor-create-another { display: inline-flex; align-items: center; gap: 6px; min-height: var(--control-height); }
+.editor-create-another input { margin: 0; }
+.editor-primary { display: grid; justify-items: center; gap: 5px; }
 .editor-primary small { font-size: 10px; line-height: 1.4; }
 .editor-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
@@ -966,6 +969,20 @@ main {
 }
 :is(.item-editor, .marker-editor) button.editor-delete, .editor-error, .marker-editor [role="alert"] {
   color: var(--danger);
+}
+:is(.item-editor, .marker-editor) button.editor-keep-editing {
+  border-color: var(--border);
+  background: var(--raised);
+  color: var(--text);
+}
+:is(.item-editor, .marker-editor) button.editor-keep-editing:hover { background: var(--hover); }
+:is(.item-editor, .marker-editor) button.editor-destructive {
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+  color: var(--danger);
+}
+:is(.item-editor, .marker-editor) button.editor-destructive:hover {
+  background: color-mix(in srgb, var(--danger) 15%, var(--surface));
 }
 .item-editor :is(input:not([type="radio"], [type="checkbox"]), textarea), .marker-editor input:not([type="radio"]) {
   box-sizing: border-box;

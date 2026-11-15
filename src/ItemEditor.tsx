@@ -90,7 +90,7 @@ export function ItemEditor(props: Props) {
     );
   }
 
-  const summary = [draft.start, draft.end].filter(Boolean).join(' → ') || 'Not scheduled';
+  const summary = [draft.start, draft.end].filter(Boolean).join(' → ') || (editing ? 'Not scheduled' : 'Optional');
   return (
     <section ref={editor} className="item-editor" data-minimized={minimized || undefined} role="dialog" aria-labelledby="item-editor-title"
       style={position && !minimized ? { left: `clamp(0px, ${position.x}px, 100vw - min(412px, 100vw - 24px))`,
@@ -170,7 +170,10 @@ export function ItemEditor(props: Props) {
         <footer>
           {editing ? <button type="button" className="editor-icon-button editor-delete" title="Delete item"
             aria-label="Delete item" onClick={props.onDelete}><EditorIcon name="trash" /></button>
-            : <label><input type="checkbox" checked={another} onChange={(event) => props.onAnother(event.target.checked)} /> Create another</label>}
+            : <label className="editor-create-another">
+              <input type="checkbox" checked={another} onChange={(event) => props.onAnother(event.target.checked)} />
+              <span>Create another</span>
+            </label>}
           <button type="button" onClick={props.onCancel}>Cancel</button>
           <div className="editor-primary"><button type="submit">{editing ? 'Save' : 'Create'}</button><small>Ctrl / ⌘ + Enter</small></div>
         </footer>
@@ -180,8 +183,10 @@ export function ItemEditor(props: Props) {
         onClose={props.onKeepEditing}>
         <p id="item-confirmation-title">{confirmation === 'delete' ? 'Delete this item?' : 'Discard changes?'}</p>
         <div className="editor-confirm-actions">
-          <button type="button" autoFocus onClick={props.onKeepEditing}>Keep editing</button>
-          <button type="button" onClick={props.onConfirm}>{confirmation === 'delete' ? 'Delete item' : 'Discard changes'}</button>
+          <button type="button" className="editor-keep-editing" autoFocus onClick={props.onKeepEditing}>Keep editing</button>
+          <button type="button" className="editor-destructive" onClick={props.onConfirm}>
+            {confirmation === 'delete' ? 'Delete item' : 'Discard changes'}
+          </button>
         </div>
       </dialog>
     </section>

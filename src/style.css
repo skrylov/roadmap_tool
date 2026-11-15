@@ -301,6 +301,17 @@ body {
   width: max-content;
 }
 
+@supports (interpolate-size: allow-keywords) {
+  @media (prefers-reduced-motion: no-preference) {
+    #timeline-item-list > .vis-content {
+      interpolate-size: allow-keywords;
+      overflow: hidden;
+      transition: width 190ms ease-in-out, visibility 190ms;
+    }
+    #timeline-item-list .vis-labelset { width: max-content; }
+  }
+}
+
 @media (max-width: 600px) {
   .timeline-toolbar {
     flex-wrap: wrap;

@@ -323,6 +323,22 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
     return () => sidebar.removeEventListener('scroll', rememberScroll);
   }, [active, sidebarVisible]);
 
+  useEffect(() => {
+    if (!active) return;
+    const content = container.current?.querySelector('.vis-panel.vis-left > .vis-content');
+    if (!content) return;
+    // The library derives its calendar layout from the measured sidebar width.
+    // The outer Timeline does not resize when this inner panel animates.
+    let width = content.getBoundingClientRect().width;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry.contentRect.width === width) return;
+      width = entry.contentRect.width;
+      timeline.current?.redraw();
+    });
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [active]);
+
   function selectView(preset: CalendarView) {
     const view = timeline.current;
     if (!view) return;

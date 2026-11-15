@@ -39,6 +39,16 @@ function App() {
   const [includeWeekends, setIncludeWeekends] = useState(startup.initial.includeWeekends);
   const [storageWarning, setStorageWarning] = useState(startup.warning);
   const lastSaved = useRef(startup.initial);
+  const moreOptions = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    function dismissOutside(event: PointerEvent) {
+      const menu = moreOptions.current;
+      if (menu?.open && event.target instanceof Node && !menu.contains(event.target)) menu.open = false;
+    }
+    document.addEventListener('pointerdown', dismissOutside, true);
+    return () => document.removeEventListener('pointerdown', dismissOutside, true);
+  }, []);
 
   useEffect(() => {
     if (startup.warning) return;
@@ -128,7 +138,7 @@ function App() {
           <span className="app-breadcrumb-divider" aria-hidden="true">/</span>
           <h1>Roadmap</h1>
         </div>
-        <details className="workspace-disclosure" onKeyDown={(event) => {
+        <details ref={moreOptions} className="workspace-disclosure" onKeyDown={(event) => {
           if (event.key !== 'Escape' || !event.currentTarget.open) return;
           event.preventDefault();
           event.currentTarget.open = false;

@@ -90,7 +90,7 @@ export function ItemEditor(props: Props) {
     );
   }
 
-  const summary = [draft.start, draft.end].filter(Boolean).join(' → ') || (editing ? 'Not scheduled' : 'Optional');
+  const summary = [draft.start, draft.end].filter(Boolean).join(' → ') || 'Optional';
   return (
     <section ref={editor} className="item-editor" data-minimized={minimized || undefined} role="dialog" aria-labelledby="item-editor-title"
       style={position && !minimized ? { left: `clamp(0px, ${position.x}px, 100vw - min(412px, 100vw - 24px))`,

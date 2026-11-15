@@ -425,6 +425,19 @@ body {
 .editor-schedule summary:hover { background: var(--hover); }
 .editor-schedule summary small { margin-inline-start: auto; color: var(--muted); font-weight: 400; }
 .editor-schedule .editor-pair { padding-block: 6px; }
+@supports selector(::details-content) and (interpolate-size: allow-keywords) {
+  @media (prefers-reduced-motion: no-preference) {
+    .editor-schedule details::details-content {
+      interpolate-size: allow-keywords;
+      block-size: 0;
+      overflow: clip;
+      overflow-clip-margin: 4px;
+      transition: block-size 180ms ease-in-out, content-visibility 180ms allow-discrete;
+    }
+    .editor-schedule details[open]::details-content { block-size: auto; }
+    .editor-schedule summary::before { transition: transform 180ms ease-in-out; }
+  }
+}
 .editor-schedule > .editor-error { display: block; margin-top: 4px; }
 .editor-unschedule {
   margin-top: 2px;

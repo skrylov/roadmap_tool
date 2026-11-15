@@ -101,7 +101,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
       zoomMax,
       verticalScroll: true,
       horizontalScroll: true,
-      maxHeight: 420,
+      maxHeight: 'max(240px, calc(100dvh - 194px))',
       showCurrentTime: false,
       groupTemplate(group: DataGroup) {
         const children = group.nestedGroups;
@@ -439,7 +439,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
   const sidebarAction = sidebarVisible ? 'Hide item list' : 'Show item list';
 
   return (
-    <section hidden={!active} id="timeline-view" aria-label="Timeline">
+    <section hidden={!active} id="timeline-view" aria-label="Timeline" data-sidebar-hidden={!sidebarVisible || undefined}>
       {selectedItemId && (
         <style>{`
           #timeline-view .roadmap-label[data-item-id="${CSS.escape(selectedItemId)}"],
@@ -452,29 +452,34 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
           }
         `}</style>
       )}
-      <p>Drag between rows to reorder. Drop an unscheduled item onto its own timeline row to schedule it. Drag bars sideways to change dates or drag their edges to resize.</p>
-      <div className="timeline-toolbar">
-        <button type="button" className="timeline-sidebar-toggle" title={sidebarAction}
-          aria-label={sidebarAction} aria-expanded={sidebarVisible} aria-controls="timeline-item-list"
-          onClick={() => setSidebarVisible((visible) => !visible)}>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <rect x="3" y="5" width="18" height="14" rx="2" />
-            <path d="M9 5v14" />
-            <path d={sidebarVisible ? 'm16 9-3 3 3 3' : 'm13 9 3 3-3 3'} />
-          </svg>
-        </button>
-        <div role="group" aria-label="Calendar view">
+      <div className="workspace-toolbar timeline-toolbar">
+        <div className="segmented-control" role="group" aria-label="Calendar view">
           {calendarViews.map((preset) => (
             <button key={preset} type="button" aria-pressed={selectedView === preset} onClick={() => selectView(preset)}>
               {preset}
             </button>
           ))}
         </div>
+        <details className="workspace-disclosure timeline-help">
+          <summary>Help</summary>
+          <p className="workspace-popover">Drag between rows to reorder. Drop an unscheduled item onto its own timeline row to schedule it. Drag bars sideways to change dates or drag their edges to resize.</p>
+        </details>
         <div ref={setMarkerToolbar} />
       </div>
       <TimelineMarkers active={active} timeline={markerTimeline} container={container} toolbar={markerToolbar}
-        markers={markers} onSave={onSaveMarker} onDelete={onDeleteMarker} />
+        markers={markers} onSave={onSaveMarker} onDelete={onDeleteMarker}
+        sidebarControl={
+          <button type="button" className="timeline-sidebar-toggle" title={sidebarAction}
+            aria-label={sidebarAction} aria-expanded={sidebarVisible} aria-controls="timeline-item-list"
+            onClick={() => setSidebarVisible((visible) => !visible)}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+              strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="M9 5v14" />
+              <path d={sidebarVisible ? 'm16 9-3 3 3 3' : 'm13 9 3 3-3 3'} />
+            </svg>
+          </button>
+        } />
       <div
         ref={container}
         aria-label="Roadmap timeline"
@@ -482,7 +487,6 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
         onDragOverCapture={allowDrop}
         onDropCapture={scheduleItem}
         className={ghost ? 'roadmap-reordering' : undefined}
-        data-sidebar-hidden={!sidebarVisible || undefined}
         onPointerDownCapture={startBarDrag}
         onClickCapture={(event) => {
           const click = clickItem.current;

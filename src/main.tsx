@@ -122,18 +122,29 @@ function App() {
 
   return (
     <main>
-      <h1>Roadmap Tool</h1>
+      <header className="app-header">
+        <div className="app-identity">
+          <span className="app-brand">last_rm</span>
+          <span className="app-breadcrumb-divider" aria-hidden="true">/</span>
+          <h1>Roadmap</h1>
+        </div>
+        <details className="workspace-disclosure">
+          <summary>Settings</summary>
+          <div className="workspace-popover">
+            <label>
+              <input type="checkbox" checked={includeWeekends} onChange={(event) => setIncludeWeekends(event.target.checked)} />
+              Count weekends toward duration
+            </label>
+          </div>
+        </details>
+        <button className="button-primary" type="button" onClick={() => request({ action: 'open' })}>Add item</button>
+      </header>
       {storageWarning && <p className="editor-error" role="alert">{storageWarning}</p>}
-      <div role="group" aria-label="Roadmap view">
-        {(['Board', 'Timeline'] as const).map((name) => (
+      <div className="view-tabs" role="group" aria-label="Roadmap view">
+        {(['Timeline', 'Board'] as const).map((name) => (
           <button key={name} type="button" aria-pressed={view === name} onClick={() => setView(name)}>{name}</button>
         ))}
       </div>
-      <button type="button" onClick={() => request({ action: 'open' })}>Add item</button>
-      <label>
-        <input type="checkbox" checked={includeWeekends} onChange={(event) => setIncludeWeekends(event.target.checked)} />
-        Count weekends toward duration
-      </label>
       <RoadmapTimeline active={view === 'Timeline'} roadmapItems={items}
         setRoadmapItems={setItems} includeWeekends={includeWeekends} onEdit={editItem} selectedItemId={selectedItemId}
         markers={markers} onSaveMarker={(marker) => setMarkers((current) => current.some(({ id }) => id === marker.id)

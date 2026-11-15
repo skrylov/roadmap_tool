@@ -341,69 +341,190 @@ body {
   right: 12px;
   bottom: 12px;
   width: min(412px, 100vw - 24px);
+  max-height: calc(100% - var(--editor-top, 16px) - 8px);
   box-sizing: border-box;
-  border: 1px solid #c9ccd2;
-  border-radius: 8px;
-  background: #fff;
-  color: #20242b;
-  box-shadow: 0 8px 28px #0003;
+  display: flex;
+  flex-direction: column;
 }
 
-.item-editor header, .item-editor footer {
+.item-editor header, .marker-editor header,
+.item-editor footer, .marker-editor footer {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: var(--space);
+  padding: 6px 12px;
 }
 
-.item-editor header {
-  border-radius: 7px 7px 0 0;
-  cursor: move;
-  touch-action: none;
-  user-select: none;
+.item-editor header, .marker-editor header {
+  gap: 4px;
+  background: var(--raised);
+  border-radius: calc(var(--radius) + 2px) calc(var(--radius) + 2px) 0 0;
+  border-bottom: 1px solid var(--divider);
+}
+.item-editor header { cursor: move; touch-action: none; user-select: none; }
+.item-editor header strong, .marker-editor header strong { margin-inline-end: auto; }
+
+.item-editor-form:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 500px;
+}
+.item-editor header, .item-editor footer { flex-shrink: 0; }
+.item-editor-body, .marker-editor-body {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+.item-editor-body { overflow-y: auto; }
+.item-editor-body label, .marker-editor-body > label, .marker-name-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.item-editor-body :is(label, legend), .marker-editor-body :is(label, legend) {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.item-editor-body textarea { resize: vertical; line-height: 1.4; }
+.item-editor-body fieldset, .marker-editor-body fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.item-editor-body legend, .marker-editor-body legend { padding: 0; margin-bottom: 5px; }
+.editor-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.editor-size-color {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px 18px;
 }
 
-.item-editor header strong, .item-editor footer > :first-child {
-  margin-right: auto;
+.editor-schedule {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
-
-.item-editor button { min-height: 27px; }
-.item-editor-form:not([hidden]) { display: flex; flex-direction: column; max-height: min(500px, 100dvh - var(--editor-top, 16px) - 48px); }
-.item-editor-body { padding: 12px; overflow-y: auto; display: grid; gap: 10px; }
-.item-editor-body label { display: grid; gap: 3px; min-width: 0; }
-.item-editor-body input, .item-editor-body textarea, .item-editor-body select { box-sizing: border-box; min-width: 0; width: 100%; font: inherit; }
-.item-editor-body textarea { resize: vertical; }
-.item-editor-body fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
-.item-editor-body summary { cursor: pointer; }
-.item-editor-body summary small { margin-inline-start: 6px; }
-.editor-pair { display: flex; flex-wrap: wrap; gap: 10px; }
+.editor-schedule summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+  min-height: var(--control-height);
+  padding-inline: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.editor-schedule summary::-webkit-details-marker { display: none; }
+.editor-schedule summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  margin-inline: 3px;
+  border: solid var(--muted);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(-45deg);
+}
+.editor-schedule details[open] summary::before { transform: rotate(45deg); }
+.editor-schedule summary:hover { background: var(--hover); }
+.editor-schedule summary small { margin-inline-start: auto; color: var(--muted); font-weight: 400; }
+.editor-schedule .editor-pair { padding: 8px; border-top: 1px solid var(--divider); }
+.editor-schedule > .editor-error { display: block; padding: 0 8px 6px; }
 .editor-unschedule {
-  justify-self: start;
-  padding: 2px 0;
+  margin: 0 8px 5px;
+  padding: 3px 0;
   border: 0;
   background: none;
-  color: #5c626c;
+  color: var(--muted);
   font: inherit;
   font-size: 12px;
   text-decoration: underline;
+  text-underline-offset: 2px;
   cursor: pointer;
 }
-.editor-segments label { display: inline-flex; border: 1px solid #c9ccd2; padding: 4px 8px; }
-.editor-segments label:has(:checked) { background: #e7edfb; }
-.editor-colors { display: flex; gap: 9px; align-items: center; }
-.editor-colors button { position: relative; width: 24px; min-height: 24px; height: 24px; border: 1px solid #888; border-radius: 50%; display: grid; place-items: center; }
-.editor-colors [aria-pressed="true"] {
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #272b34;
+.editor-unschedule:hover { color: var(--text); }
+
+.editor-segment-track {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--app-bg);
 }
-.editor-colors button:focus-visible { outline-offset: 5px; }
-.item-editor footer { border-top: 1px solid #ddd; flex-wrap: wrap; align-items: flex-start; }
+.editor-segment-track label {
+  position: relative;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-width: 29px;
+  min-height: 27px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius) - 1px);
+  cursor: pointer;
+  transition: background-color 160ms ease-in-out, color 160ms ease-in-out, border-color 160ms ease-in-out;
+}
+.editor-segment-track label:hover { background: var(--hover); }
+.editor-segment-track label:has(:checked) {
+  background: var(--selected);
+  color: var(--text);
+  border-color: var(--border);
+  font-weight: 700;
+}
+.editor-segment-track input, .marker-swatch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  .editor-segment-track label { transition: none; }
+}
+
+.editor-colors {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 33px;
+}
+.editor-colors .editor-swatch {
+  position: relative;
+  box-sizing: border-box;
+  width: 21px;
+  height: 21px;
+  min-height: 21px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.editor-swatch:is([aria-pressed="true"], .editor-swatch-current, :has(:checked)) {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--text);
+}
+.editor-colors .editor-swatch-current { cursor: default; }
+.editor-segment-track label:has(:focus-visible), .editor-swatch:has(:focus-visible), .editor-swatch:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.item-editor footer, .marker-editor footer {
+  border-top: 1px solid var(--divider);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.item-editor footer { align-items: flex-start; }
+:is(.item-editor, .marker-editor) footer > .editor-delete, .item-editor footer > label {
+  margin-inline-end: auto;
+}
+.item-editor footer > label { display: inline-flex; align-items: center; gap: 4px; min-height: var(--control-height); }
 .editor-primary { display: grid; justify-items: center; gap: 2px; }
-.editor-primary small { font-size: 11px; color: #5c626c; }
-.editor-error, .editor-delete { color: #a32030; }
+.editor-primary small { font-size: 10px; line-height: 1.4; }
 .editor-confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
 .item-editor[data-minimized] { width: min(260px, 100vw - 24px); }
 .item-editor[data-minimized] header { cursor: default; touch-action: auto; }
+
 
 main {
   --roadmap-selection-ring: inset 0 0 0 2px #272b34, inset 0 0 0 3px #fff;
@@ -439,13 +560,6 @@ main {
 }
 
 /* The strip follows the calendar panel, independently of the scrollable rows. */
-.marker-editor footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
 .marker-strip {
   position: relative;
   height: 30px;
@@ -544,21 +658,10 @@ main {
   width: min(280px, calc(100vw - 16px));
   max-height: calc(100dvh - 16px);
   overflow: auto;
-  display: grid;
-  gap: 8px;
-  padding: 10px;
-  background: white;
-  border: 1px solid #aab3c1;
-  border-radius: 6px;
-  box-shadow: 0 4px 16px #2223;
-  font-size: 13px;
-  transform-origin: top;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .marker-editor {
-    animation: marker-editor-open 160ms ease-out;
-  }
+  .marker-editor { animation: marker-editor-open 160ms ease-out; }
 }
 
 @keyframes marker-editor-open {
@@ -566,86 +669,12 @@ main {
   to { opacity: 1; transform: scaleY(1); }
 }
 
-.marker-editor header, .marker-editor form > label, .marker-name-field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
+.marker-editor-body p { margin: 0; }
+#marker-name-feedback { color: var(--muted); font-weight: 400; }
+#marker-name-feedback small + small { margin-inline-start: 6px; }
+.marker-confirmation p { margin: 0; padding: 12px; }
 
-.marker-editor form {
-  display: grid;
-  gap: 8px;
-}
 
-.marker-editor form > label input, .marker-name-field input {
-  box-sizing: border-box;
-  width: 58%;
-}
-
-.marker-name-field {
-  flex-wrap: wrap;
-  row-gap: 2px;
-}
-
-#marker-name-feedback {
-  flex-basis: 100%;
-  text-align: end;
-}
-
-#marker-name-feedback small + small {
-  margin-inline-start: 6px;
-}
-
-.marker-editor fieldset {
-  display: flex;
-  gap: 8px;
-  margin: 0;
-  padding: 4px;
-  border: 0;
-}
-
-.marker-editor p {
-  margin: 0 0 6px;
-}
-
-.marker-editor [role="alert"] {
-  color: #a3112b;
-}
-
-.marker-editor footer {
-  justify-content: flex-end;
-}
-
-.marker-editor footer > :first-child:nth-last-child(3) {
-  margin-right: auto;
-}
-
-.marker-swatch {
-  display: grid;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.marker-swatch input {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: inherit;
-}
-
-.marker-swatch:has(:checked) {
-  outline: 1px solid #263344;
-  outline-offset: 2px;
-}
-
-.marker-swatch:has(:focus-visible) {
-  outline: 2px solid #235da9;
-  outline-offset: 3px;
-}
 :root {
   color-scheme: dark;
   --app-bg: #1c1b19;
@@ -732,7 +761,8 @@ main {
   color: var(--on-primary);
 }
 
-:where(main button, main summary, main input, main textarea, main a, .roadmap-label):focus-visible {
+:where(main button, main summary, main input, main textarea, main a, .roadmap-label,
+  .marker-editor button, .marker-editor input):focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
@@ -922,17 +952,33 @@ main {
 
 .item-editor, .marker-editor, .item-editor dialog {
   background: var(--surface);
-  border-color: var(--border);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 3px);
   color: var(--text);
   box-shadow: 0 6px 18px #0004;
 }
-.item-editor footer, .editor-segments label { border-color: var(--border); }
-.editor-segments label:has(:checked) { background: var(--selected); }
-.item-editor button.editor-delete, .editor-error, .marker-editor [role="alert"] { color: var(--danger); }
+.item-editor dialog { max-width: calc(100vw - 48px); }
+:is(.item-editor, .marker-editor) button.editor-icon-button {
+  display: grid;
+  place-items: center;
+  width: var(--control-height);
+  padding: 0;
+}
+:is(.item-editor, .marker-editor) button.editor-delete, .editor-error, .marker-editor [role="alert"] {
+  color: var(--danger);
+}
 .item-editor :is(input:not([type="radio"], [type="checkbox"]), textarea), .marker-editor input:not([type="radio"]) {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  min-height: var(--control-height);
   padding: 4px 6px;
   background: var(--app-bg);
   color: var(--text);
+  font: 13px/1.4 system-ui, sans-serif;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+}
+:is(.item-editor, .marker-editor) :is(input, textarea)[aria-invalid="true"] {
+  border-color: var(--danger);
 }

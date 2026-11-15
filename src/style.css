@@ -683,7 +683,7 @@ main {
 
 .app-header button, .workspace-toolbar button, .view-tabs button,
 .workspace-disclosure > summary, .timeline-sidebar-toggle,
-.item-editor button:not(.editor-colors button, .editor-unschedule), .marker-editor button {
+.item-editor button:not(:where(.editor-colors button, .editor-unschedule)), .marker-editor button {
   box-sizing: border-box;
   min-height: var(--control-height);
   padding: 0 10px;
@@ -698,7 +698,7 @@ main {
 
 .app-header button:hover, .workspace-toolbar button:hover, .view-tabs button:hover,
 .workspace-disclosure > summary:hover, .workspace-disclosure[open] > summary, .timeline-sidebar-toggle:hover,
-.item-editor button:not(.editor-colors button, .editor-unschedule):hover, .marker-editor button:hover {
+.item-editor button:not(:where(.editor-colors button, .editor-unschedule)):where(:hover), .marker-editor button:hover {
   background: var(--hover);
   color: var(--text);
 }

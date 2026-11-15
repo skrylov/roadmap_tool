@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { dateInput } from './calendar';
+import { EditorIcon } from './EditorIcon';
 
 const nameLimit = 60;
 export const markerColors = [
@@ -102,14 +103,15 @@ export function MarkerEditor({ marker, active, anchor, onClose, onSave, onDelete
       }}>
       <header>
         <strong id="marker-editor-title">{marker ? 'Edit marker' : 'Add marker'}</strong>
-        <button type="button" aria-label="Close marker editor" onClick={() => requestDiscard(() => close(onClose))}>×</button>
+        <button type="button" className="editor-icon-button" aria-label="Close marker editor" title="Close marker editor"
+          onClick={() => requestDiscard(() => close(onClose))}><EditorIcon name="close" /></button>
       </header>
       {confirmation ? (
-        <div role="group" aria-label={confirmation.message}>
+        <div className="marker-confirmation" role="group" aria-label={confirmation.message}>
           <p>{confirmation.message}</p>
           <footer>
-            <button ref={keep} type="button" onClick={() => setConfirmation(undefined)}>Keep editing</button>
-            <button type="button" onClick={() => close(confirmation.apply)}>{confirmation.label}</button>
+            <button ref={keep} type="button" className="editor-keep-editing" onClick={() => setConfirmation(undefined)}>Keep editing</button>
+            <button type="button" className="editor-destructive" onClick={() => close(confirmation.apply)}>{confirmation.label}</button>
           </footer>
         </div>
       ) : (
@@ -126,37 +128,40 @@ export function MarkerEditor({ marker, active, anchor, onClose, onSave, onDelete
           }
           close(() => onSave(draft));
         }}>
-          <div className="marker-name-field">
-            <label htmlFor="marker-name">Name</label>
-            <input id="marker-name" ref={name} value={draft.name} required aria-invalid={Boolean(nameError)}
-              aria-describedby={draft.name.length >= nameLimit * .8 || nameError ? 'marker-name-feedback' : undefined}
-              onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
-            {(draft.name.length >= nameLimit * .8 || nameError) && (
-              <div id="marker-name-feedback">
-                {draft.name.length >= nameLimit * .8 && <small>{draft.name.length} / {nameLimit}</small>}
-                {nameError && <small role="alert">{nameError}</small>}
-              </div>
-            )}
+          <div className="marker-editor-body">
+            <div className="marker-name-field">
+              <label htmlFor="marker-name">Name</label>
+              <input id="marker-name" ref={name} value={draft.name} required aria-invalid={Boolean(nameError)}
+                aria-describedby={draft.name.length >= nameLimit * .8 || nameError ? 'marker-name-feedback' : undefined}
+                onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+              {(draft.name.length >= nameLimit * .8 || nameError) && (
+                <div id="marker-name-feedback">
+                  {draft.name.length >= nameLimit * .8 && <small>{draft.name.length} / {nameLimit}</small>}
+                  {nameError && <small role="alert">{nameError}</small>}
+                </div>
+              )}
+            </div>
+            <label>{marker ? 'Date' : 'Date (optional)'}
+              <input type="date" value={draft.date} required={Boolean(marker)}
+                aria-invalid={dateError}
+                onChange={(event) => { setDateError(false); setDraft({ ...draft, date: event.target.value }); }} />
+            </label>
+            <fieldset>
+              <legend>Color</legend>
+              <div className="editor-colors">{markerColors.map(({ name, value }) => (
+                <label key={value} className="editor-swatch marker-swatch" style={{ backgroundColor: value }} title={name}>
+                  <input type="radio" name="marker-color" aria-label={name} checked={draft.color === value}
+                    onChange={() => setDraft({ ...draft, color: value })} />
+                </label>
+              ))}</div>
+            </fieldset>
+            {dateError && <p role="alert">Enter a valid date.</p>}
           </div>
-          <label>{marker ? 'Date' : 'Date (optional)'}
-            <input type="date" value={draft.date} required={Boolean(marker)}
-              aria-invalid={dateError}
-              onChange={(event) => { setDateError(false); setDraft({ ...draft, date: event.target.value }); }} />
-          </label>
-          <fieldset>
-            <legend>Color</legend>
-            {markerColors.map(({ name, value }) => (
-              <label key={value} className="marker-swatch" style={{ backgroundColor: value }} title={name}>
-                <input type="radio" name="marker-color" aria-label={name} checked={draft.color === value}
-                  onChange={() => setDraft({ ...draft, color: value })} />
-              </label>
-            ))}
-          </fieldset>
-          {dateError && <p role="alert">Enter a valid date.</p>}
           <footer>
-            {marker && <button type="button" onClick={() => setConfirmation({
+            {marker && <button type="button" className="editor-icon-button editor-delete" title="Delete marker"
+              aria-label="Delete marker" onClick={() => setConfirmation({
               message: 'Delete this marker?', label: 'Delete marker', apply: onDelete,
-            })}>Delete</button>}
+            })}><EditorIcon name="trash" /></button>}
             <button type="button" onClick={() => requestDiscard(() => close(onClose))}>Cancel</button>
             <button type="submit">{marker ? 'Save' : 'Add'}</button>
           </footer>

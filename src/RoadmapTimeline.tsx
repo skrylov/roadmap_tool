@@ -593,7 +593,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
           }
         }}
       />
-      {ghost && point.current && (
+      {ghost && !draggedId.current && point.current && (
         <div ref={ghostElement} className="roadmap-drag-ghost" aria-hidden="true"
           style={{ transform: `translate3d(${point.current.x}px, ${point.current.y}px, 0)` }}>
           {ghost}

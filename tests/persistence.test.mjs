@@ -5,7 +5,7 @@ import { createServer } from 'vite';
 const vite = await createServer({ server: { middlewareMode: true, ws: false }, appType: 'custom' });
 after(() => vite.close());
 const { serializeRoadmap, deserializeRoadmap } = await vite.ssrLoadModule('/src/persistence.ts');
-const { readBackup, maxBackupBytes } = await vite.ssrLoadModule('/src/backup.ts');
+const { readBackup, backupLimits } = await vite.ssrLoadModule('/src/backup.ts');
 
 const empty = { items: [], markers: [], includeWeekends: false, boardMode: 'Detailed', view: 'Timeline' };
 const snapshot = {
@@ -76,7 +76,7 @@ test('rejects invalid backup files and checks size before reading', async () => 
   }
   let read = false;
   await assert.rejects(readBackup({
-    size: maxBackupBytes + 1,
+    size: backupLimits.bytes + 1,
     async text() { read = true; return ''; },
   }), /too large/);
   assert.equal(read, false);
@@ -84,4 +84,27 @@ test('rejects invalid backup files and checks size before reading', async () => 
     size: 10,
     async text() { throw new Error(); },
   }), /could not be read/);
+});
+
+test('accepts a backup with exactly 1,000 items and 200 markers', async () => {
+  const state = {
+    ...empty,
+    items: Array.from({ length: 1_000 }, (_, order) => ({
+      id: `item-${order}`, content: 'Plan', category: 'Now', size: 'S', order,
+    })),
+    markers: Array.from({ length: 200 }, (_, index) => ({
+      ...snapshot.markers[0], id: `roadmap-marker-${index}`,
+    })),
+  };
+  assert.deepEqual(await readBackup(new Blob([serializeRoadmap(state)])), state);
+});
+
+test('rejects 1,001 items or 201 markers before validating any records', async () => {
+  const saved = JSON.parse(serializeRoadmap(empty));
+  await assert.rejects(readBackup(new Blob([JSON.stringify({
+    ...saved, items: Array(1_001).fill(null),
+  })])), /limit of 1,000 roadmap items/);
+  await assert.rejects(readBackup(new Blob([JSON.stringify({
+    ...saved, items: [null], markers: Array(201).fill(null),
+  })])), /limit of 200 markers/);
 });

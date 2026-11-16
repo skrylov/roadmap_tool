@@ -6,6 +6,7 @@ import { categories, type RoadmapItem } from './prototypeItems';
 
 export const storageKey = 'little-roadmap';
 const version = 1;
+export const defaultRoadmapName = 'Roadmap';
 export const roadmapNameLimit = 80;
 
 export type RoadmapSnapshot = {
@@ -102,7 +103,11 @@ export function serializeRoadmap(snapshot: RoadmapSnapshot): string {
 }
 
 export function deserializeRoadmap(raw: string): RoadmapSnapshot {
-  const saved = record(JSON.parse(raw));
+  return validateRoadmap(JSON.parse(raw));
+}
+
+export function validateRoadmap(document: unknown): RoadmapSnapshot {
+  const saved = record(document);
   const { includeWeekends, boardMode, view } = saved;
   if (saved.version !== version || !Array.isArray(saved.items) || !Array.isArray(saved.markers) ||
     typeof includeWeekends !== 'boolean' || (boardMode !== 'Compact' && boardMode !== 'Detailed') ||

@@ -131,7 +131,9 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
       horizontalScroll: true,
       height: '100%',
       showCurrentTime: false,
-      groupTemplate(group: TimelineGroup) {
+      groupTemplate(group: TimelineGroup | null) {
+        // vis-timeline can request an ungrouped label while tearing down the old roadmap.
+        if (!group) return '';
         const children = group.nestedGroups;
         if (children) {
           const expanded = group.showNested !== false;

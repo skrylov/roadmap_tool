@@ -153,7 +153,10 @@ body {
   height: 52px;
   box-sizing: border-box;
   background-color: var(--app-bg);
-  background-image: linear-gradient(to right, color-mix(in srgb, var(--board-item-color) 17%, transparent), transparent 19%);
+  background-image: radial-gradient(ellipse 27% 92% at 0 106%,
+    color-mix(in srgb, var(--board-item-color) 52%, transparent),
+    color-mix(in srgb, var(--board-item-color) 16%, transparent) 48%,
+    transparent 100%);
   border: 1px solid var(--border);
   border-inline-start: 4px solid var(--board-item-color);
   border-radius: var(--radius);
@@ -230,6 +233,7 @@ body {
 }
 
 .board-card:has(.board-card-link) .board-card-dates {
+  margin-inline-start: 46px;
   max-width: calc(100% - 46px);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -238,7 +242,7 @@ body {
 .board-card-link {
   position: absolute;
   inset-block-end: 7px;
-  inset-inline-end: 9px;
+  inset-inline-start: 9px;
   display: inline-flex;
   align-items: center;
   gap: 4px;

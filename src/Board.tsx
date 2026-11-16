@@ -17,11 +17,11 @@ function CardContents({ item, mode }: { item: RoadmapItem; mode: BoardMode }) {
     <>
       <span className="board-card-heading">
         <span className="board-card-title" data-truncated-text>{item.content}</span>
-        <span>{item.size}</span>
+        <span className="board-card-size">{item.size}</span>
       </span>
       {mode === 'Detailed' && (
         <>
-          <span className="board-card-description" data-truncated-text>{item.description}</span>
+          {item.description && <span className="board-card-description" data-truncated-text>{item.description}</span>}
           {item.start && item.end && (
             <span className="board-card-dates" aria-label="Start to Ready">
               {dateLabel.format(item.start)} → {dateLabel.format(item.end)}
@@ -50,7 +50,7 @@ function Card({ item, offset, onEdit, selected, mode }: {
   const { setNodeRef, setActivatorNodeRef, attributes, listeners, isDragging } = useDraggable({ id: item.id, data: { item } });
   return (
     <div ref={setNodeRef} className="board-card" data-mode={mode}
-      style={{ borderInlineStartColor: item.color ?? defaultColor, transform: offset ? `translateY(${offset}px)` : undefined }}
+      style={{ '--board-item-color': item.color ?? defaultColor, transform: offset ? `translateY(${offset}px)` : undefined } as CSSProperties}
       data-item-id={item.id} data-editor-selected={selected || undefined} data-dragging={isDragging || undefined}>
       <button ref={setActivatorNodeRef} type="button" className="board-card-action"
         {...attributes} {...listeners} onClick={() => onEdit(item.id)}>
@@ -263,7 +263,7 @@ export function Board({ items, onReorder, onEdit, selectedItemId, mode, onModeCh
         {dragged && (
           <div className="board-card board-card-preview" data-mode={mode}
             data-editor-selected={dragged.id === selectedItemId || undefined}
-            style={{ borderInlineStartColor: dragged.color ?? defaultColor }} aria-hidden="true">
+            style={{ '--board-item-color': dragged.color ?? defaultColor } as CSSProperties} aria-hidden="true">
             <div className="board-card-action"><CardContents item={dragged} mode={mode} /></div>
             {mode === 'Detailed' && dragged.link && <span className="board-card-link"><LinkLabel /></span>}
           </div>

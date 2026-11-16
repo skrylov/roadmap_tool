@@ -9,7 +9,9 @@ import { RoadmapTimeline } from './RoadmapTimeline';
 import { windowFor } from './calendarViews';
 import { createPrototypeItems } from './prototypeItems';
 import { reorderItem } from './reorder';
-import { loadRoadmap, roadmapNameLimit, saveRoadmap, writeWarning, type RoadmapSnapshot } from './persistence';
+import { defaultRoadmapName, loadRoadmap, roadmapNameLimit, saveRoadmap, writeWarning, type RoadmapSnapshot } from './persistence';
+import { downloadBackup } from './backup';
+import { RestoreBackupDialog } from './RestoreBackupDialog';
 import './style.css';
 
 type Editor = { id?: string; draft: ItemDraft; original: ItemDraft; another: boolean; session: number };
@@ -33,7 +35,7 @@ function App() {
     return { initial, warning };
   });
   const [view, setView] = useState(startup.initial.view);
-  const [roadmapName, setRoadmapName] = useState(startup.initial.name ?? 'Roadmap');
+  const [roadmapName, setRoadmapName] = useState(startup.initial.name ?? defaultRoadmapName);
   const [nameDraft, setNameDraft] = useState<string | null>(null);
   const renameButton = useRef<HTMLButtonElement>(null);
   const [boardMode, setBoardMode] = useState<BoardMode>(startup.initial.boardMode);
@@ -41,8 +43,12 @@ function App() {
   const [markers, setMarkers] = useState<Marker[]>(startup.initial.markers);
   const [includeWeekends, setIncludeWeekends] = useState(startup.initial.includeWeekends);
   const [storageWarning, setStorageWarning] = useState(startup.warning);
-  const lastSaved = useRef(startup.initial);
+  const lastSaved = useRef<RoadmapSnapshot | null>(startup.warning ? null : startup.initial);
   const moreOptions = useRef<HTMLDetailsElement>(null);
+  const backupInput = useRef<HTMLInputElement>(null);
+  const [backupFile, setBackupFile] = useState<File>();
+  const [backupStatus, setBackupStatus] = useState('');
+  const [timelineRevision, setTimelineRevision] = useState(0);
 
   useEffect(() => {
     function dismissOutside(event: PointerEvent) {
@@ -54,10 +60,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (startup.warning) return;
     const previous = lastSaved.current;
+    if (!previous) return;
     if (previous.items === items && previous.markers === markers && previous.includeWeekends === includeWeekends &&
-      previous.boardMode === boardMode && previous.view === view && (previous.name ?? 'Roadmap') === roadmapName) return;
+      previous.boardMode === boardMode && previous.view === view && (previous.name ?? defaultRoadmapName) === roadmapName) return;
 
     const snapshot = { name: roadmapName, items, markers, includeWeekends, boardMode, view };
     try {
@@ -67,7 +73,7 @@ function App() {
     } catch {
       setStorageWarning(writeWarning);
     }
-  }, [startup.warning, items, markers, includeWeekends, boardMode, view, roadmapName]);
+  }, [items, markers, includeWeekends, boardMode, view, roadmapName]);
 
   function finishRename(saveName: boolean, restoreFocus = false) {
     const name = nameDraft?.trim();
@@ -140,6 +146,45 @@ function App() {
   const selectedItemId = editor?.id;
   const editItem = (id: string) => request({ action: 'open', id });
 
+  function closeMoreOptions() {
+    if (!moreOptions.current) return;
+    moreOptions.current.open = false;
+    moreOptions.current.querySelector('summary')?.focus();
+  }
+
+  function exportBackup() {
+    downloadBackup({ name: roadmapName, items, markers, includeWeekends, boardMode, view });
+  }
+
+  function closeRestore() {
+    setBackupFile(undefined);
+    requestAnimationFrame(closeMoreOptions);
+  }
+
+  function restoreBackup(snapshot: RoadmapSnapshot) {
+    try {
+      saveRoadmap(snapshot);
+    } catch {
+      return false;
+    }
+    lastSaved.current = snapshot;
+    setRoadmapName(snapshot.name ?? defaultRoadmapName);
+    setItems(snapshot.items);
+    setMarkers(snapshot.markers);
+    setIncludeWeekends(snapshot.includeWeekends);
+    setBoardMode(snapshot.boardMode);
+    setView(snapshot.view);
+    setNameDraft(null);
+    setConfirmation(null);
+    setEditor(null);
+    // Drop any transient Timeline state associated with the previous roadmap.
+    setTimelineRevision((revision) => revision + 1);
+    setStorageWarning(undefined);
+    setBackupStatus('Backup restored.');
+    closeRestore();
+    return true;
+  }
+
   return (
     <main className="roadmap-app" data-view={view}>
       <header className="app-header">
@@ -167,8 +212,7 @@ function App() {
         <details ref={moreOptions} className="workspace-disclosure" onKeyDown={(event) => {
           if (event.key !== 'Escape' || !event.currentTarget.open) return;
           event.preventDefault();
-          event.currentTarget.open = false;
-          event.currentTarget.querySelector('summary')?.focus();
+          closeMoreOptions();
         }}>
           <summary className="header-more-options" aria-label="More options" title="More options">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -187,6 +231,14 @@ function App() {
                 </svg>
               )}
             </button>
+            <button className="workspace-menu-toggle" type="button" onClick={() => {
+              closeMoreOptions();
+              exportBackup();
+            }}>Export backup</button>
+            <button className="workspace-menu-toggle" type="button" onClick={() => {
+              closeMoreOptions();
+              backupInput.current?.click();
+            }}>Restore backup</button>
           </div>
         </details>
         <button className="button-primary header-add-item" type="button" onClick={() => request({ action: 'open' })}>
@@ -196,13 +248,22 @@ function App() {
           Add item
         </button>
       </header>
+      <input type="file" ref={backupInput} accept=".json,application/json" hidden onChange={(event) => {
+        const file = event.currentTarget.files?.[0];
+        event.currentTarget.value = '';
+        if (file) {
+          setBackupStatus('');
+          setBackupFile(file);
+        }
+      }} />
+      <div className="backup-status" role="status">{backupStatus}</div>
       {storageWarning && <p className="editor-error" role="alert">{storageWarning}</p>}
       <div className="view-tabs" role="group" aria-label="Roadmap view">
         {(['Timeline', 'Board'] as const).map((name) => (
           <button key={name} type="button" aria-pressed={view === name} onClick={() => setView(name)}>{name}</button>
         ))}
       </div>
-      <RoadmapTimeline active={view === 'Timeline'} roadmapItems={items}
+      <RoadmapTimeline key={timelineRevision} active={view === 'Timeline'} roadmapItems={items}
         setRoadmapItems={setItems} includeWeekends={includeWeekends} onEdit={editItem} selectedItemId={selectedItemId}
         markers={markers} onSaveMarker={(marker) => setMarkers((current) => current.some(({ id }) => id === marker.id)
           ? current.map((entry) => entry.id === marker.id ? marker : entry) : [...current, marker])}
@@ -221,6 +282,8 @@ function App() {
           GitHub
         </a>
       </footer>
+      {backupFile && <RestoreBackupDialog file={backupFile} onCancel={closeRestore}
+        onExport={exportBackup} onRestore={restoreBackup} />}
       {editor && (
         <ItemEditor draft={editor.draft} session={editor.session} editing={Boolean(editor.id)}
           another={editor.another} includeWeekends={includeWeekends}

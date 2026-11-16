@@ -6,6 +6,7 @@ import { categories, type RoadmapItem } from './prototypeItems';
 
 export const storageKey = 'little-roadmap';
 const version = 1;
+export const defaultRoadmapName = 'Roadmap';
 export const roadmapNameLimit = 80;
 
 export type RoadmapSnapshot = {

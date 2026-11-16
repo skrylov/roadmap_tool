@@ -5,6 +5,7 @@ import { createServer } from 'vite';
 const vite = await createServer({ server: { middlewareMode: true, ws: false }, appType: 'custom' });
 after(() => vite.close());
 const { serializeRoadmap, deserializeRoadmap } = await vite.ssrLoadModule('/src/persistence.ts');
+const { readBackup, maxBackupBytes } = await vite.ssrLoadModule('/src/backup.ts');
 
 const empty = { items: [], markers: [], includeWeekends: false, boardMode: 'Detailed', view: 'Timeline' };
 const snapshot = {
@@ -52,4 +53,35 @@ test('rejects invalid JSON, unsupported versions, and malformed records', () => 
     corrupt(document);
     assert.throws(() => deserializeRoadmap(JSON.stringify(document)));
   }
+});
+
+test('a full or intentionally empty backup restores from the exported bytes', async () => {
+  const colored = { ...snapshot, items: snapshot.items.map(item => ({ ...item, color: '#dfcff3' })) };
+  for (const state of [colored, empty]) {
+    const file = new Blob([serializeRoadmap(state)], { type: 'application/json' });
+    assert.deepEqual(await readBackup(file), state);
+  }
+});
+
+test('rejects invalid backup files and checks size before reading', async () => {
+  await assert.rejects(readBackup(new Blob(['{'])), /not valid JSON/);
+  for (const damage of [
+    (document) => { document.version = 2; },
+    (document) => { document.items[0].start = '2026-02-31'; },
+    (document) => { delete document.markers; },
+  ]) {
+    const document = JSON.parse(serializeRoadmap(snapshot));
+    damage(document);
+    await assert.rejects(readBackup(new Blob([JSON.stringify(document)])), /not a valid last_rm backup/);
+  }
+  let read = false;
+  await assert.rejects(readBackup({
+    size: maxBackupBytes + 1,
+    async text() { read = true; return ''; },
+  }), /too large/);
+  assert.equal(read, false);
+  await assert.rejects(readBackup({
+    size: 10,
+    async text() { throw new Error(); },
+  }), /could not be read/);
 });

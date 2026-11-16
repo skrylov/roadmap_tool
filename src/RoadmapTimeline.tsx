@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef, useState, type Dispatch, type DragEvent, type SetStateAction } from 'react';
+import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type Dispatch, type DragEvent, type SetStateAction } from 'react';
 import { DataSet } from 'vis-data';
 import { Timeline, type DataGroup, type DataItem, type TimelineAnimationOptions } from 'vis-timeline';
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
@@ -606,7 +606,9 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
             height: insertion.headerHeight, transform: `translateY(${insertion.top}px)`,
             transitionDuration: scrolling ? '0ms' : undefined }}
         >
-          <span>{insertion.category} · Position {insertion.index + 1}{insertion.headerHeight ? ' (end)' : ''}</span>
+          <span style={{ '--insertion-calendar-edge': `${container.current?.querySelector<HTMLElement>('.vis-panel.vis-center')?.offsetLeft ?? 0}px` } as CSSProperties}>
+            {insertion.category} · Position {insertion.index + 1}{insertion.headerHeight ? ' (end)' : ''}
+          </span>
         </div>
       )}
     </section>

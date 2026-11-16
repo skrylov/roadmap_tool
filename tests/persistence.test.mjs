@@ -16,6 +16,7 @@ const snapshot = {
   ],
   markers: [{ id: 'roadmap-marker-new-year', date: new Date(2027, 0, 1), name: 'New year', color: '#235da9' }],
   view: 'Board',
+  name: 'Release roadmap',
   boardMode: 'Compact',
   includeWeekends: true,
 };
@@ -38,6 +39,8 @@ test('rejects invalid JSON, unsupported versions, and malformed records', () => 
   assert.throws(() => deserializeRoadmap('{'));
   for (const corrupt of [
     (document) => { document.version = 2; },
+    (document) => { document.name = '   '; },
+    (document) => { document.name = 'x'.repeat(81); },
     (document) => { document.items[1].id = document.items[0].id; },
     (document) => { document.items[1].order = 0; },
     (document) => { document.items[0].start = '2026-02-31'; },

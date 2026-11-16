@@ -129,7 +129,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
       zoomMax,
       verticalScroll: true,
       horizontalScroll: true,
-      maxHeight: 'max(240px, calc(100dvh - 224px))',
+      height: '100%',
       showCurrentTime: false,
       groupTemplate(group: TimelineGroup) {
         const children = group.nestedGroups;

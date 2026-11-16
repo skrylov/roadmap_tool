@@ -9,7 +9,7 @@ import { RoadmapTimeline } from './RoadmapTimeline';
 import { windowFor } from './calendarViews';
 import { createPrototypeItems } from './prototypeItems';
 import { reorderItem } from './reorder';
-import { loadRoadmap, saveRoadmap, writeWarning, type RoadmapSnapshot } from './persistence';
+import { loadRoadmap, roadmapNameLimit, saveRoadmap, writeWarning, type RoadmapSnapshot } from './persistence';
 import './style.css';
 
 type Editor = { id?: string; draft: ItemDraft; original: ItemDraft; another: boolean; session: number };
@@ -33,6 +33,9 @@ function App() {
     return { initial, warning };
   });
   const [view, setView] = useState(startup.initial.view);
+  const [roadmapName, setRoadmapName] = useState(startup.initial.name ?? 'Roadmap');
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const renameButton = useRef<HTMLButtonElement>(null);
   const [boardMode, setBoardMode] = useState<BoardMode>(startup.initial.boardMode);
   const [items, setItems] = useState(startup.initial.items);
   const [markers, setMarkers] = useState<Marker[]>(startup.initial.markers);
@@ -54,9 +57,9 @@ function App() {
     if (startup.warning) return;
     const previous = lastSaved.current;
     if (previous.items === items && previous.markers === markers && previous.includeWeekends === includeWeekends &&
-      previous.boardMode === boardMode && previous.view === view) return;
+      previous.boardMode === boardMode && previous.view === view && (previous.name ?? 'Roadmap') === roadmapName) return;
 
-    const snapshot = { items, markers, includeWeekends, boardMode, view };
+    const snapshot = { name: roadmapName, items, markers, includeWeekends, boardMode, view };
     try {
       saveRoadmap(snapshot);
       lastSaved.current = snapshot;
@@ -64,7 +67,14 @@ function App() {
     } catch {
       setStorageWarning(writeWarning);
     }
-  }, [startup.warning, items, markers, includeWeekends, boardMode, view]);
+  }, [startup.warning, items, markers, includeWeekends, boardMode, view, roadmapName]);
+
+  function finishRename(saveName: boolean, restoreFocus = false) {
+    const name = nameDraft?.trim();
+    if (saveName && name) setRoadmapName(name);
+    setNameDraft(null);
+    if (restoreFocus) requestAnimationFrame(() => renameButton.current?.focus());
+  }
 
   const [editor, setEditor] = useState<Editor | null>(null);
   const [confirmation, setConfirmation] = useState<Request | null>(null);
@@ -131,12 +141,28 @@ function App() {
   const editItem = (id: string) => request({ action: 'open', id });
 
   return (
-    <main>
+    <main className="roadmap-app" data-view={view}>
       <header className="app-header">
         <div className="app-identity">
           <span className="app-brand">last_rm</span>
           <span className="app-breadcrumb-divider" aria-hidden="true">/</span>
-          <h1>Roadmap</h1>
+          <h1 className="roadmap-name">
+            {nameDraft === null ? (
+              <button ref={renameButton} type="button" title={roadmapName} aria-label={`Rename roadmap: ${roadmapName}`}
+                onClick={() => setNameDraft(roadmapName)}>{roadmapName}</button>
+            ) : (
+              <input aria-label="Roadmap name" value={nameDraft} maxLength={roadmapNameLimit}
+                autoFocus onFocus={(event) => event.currentTarget.select()}
+                onChange={(event) => setNameDraft(event.currentTarget.value)}
+                onBlur={() => finishRename(true)}
+                onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing || (event.key !== 'Enter' && event.key !== 'Escape')) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  finishRename(event.key === 'Enter', true);
+                }} />
+            )}
+          </h1>
         </div>
         <details ref={moreOptions} className="workspace-disclosure" onKeyDown={(event) => {
           if (event.key !== 'Escape' || !event.currentTarget.open) return;
@@ -182,8 +208,19 @@ function App() {
           ? current.map((entry) => entry.id === marker.id ? marker : entry) : [...current, marker])}
         onDeleteMarker={(id) => setMarkers((current) => current.filter((marker) => marker.id !== id))} />
       {view === 'Board' && (
-        <Board mode={boardMode} onModeChange={setBoardMode} items={items} onEdit={editItem} selectedItemId={selectedItemId} onReorder={(id, destination) => setItems((current) => reorderItem(current, id, destination))} />
+        <div className="board-view">
+          <Board mode={boardMode} onModeChange={setBoardMode} items={items} onEdit={editItem} selectedItemId={selectedItemId} onReorder={(id, destination) => setItems((current) => reorderItem(current, id, destination))} />
+        </div>
       )}
+      <footer className="app-footer">
+        <span>© 2026 Sergey Krylov</span>
+        <a href="https://github.com/skrylov/roadmap_tool" aria-label="Roadmap Tool on GitHub">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.39v-1.49c-2.23.48-2.7-.95-2.7-.95-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.82 1.23.82.71 1.22 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.65-.89-3.65-3.96 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.13 0 0 .67-.22 2.2.82A7.7 7.7 0 0 1 8 3.82c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.11.16 1.93.08 2.13.51.56.82 1.28.82 2.15 0 3.08-1.88 3.75-3.67 3.95.29.25.54.74.54 1.49v2.21c0 .22.15.47.55.39A8 8 0 0 0 8 0Z" />
+          </svg>
+          GitHub
+        </a>
+      </footer>
       {editor && (
         <ItemEditor draft={editor.draft} session={editor.session} editing={Boolean(editor.id)}
           another={editor.another} includeWeekends={includeWeekends}

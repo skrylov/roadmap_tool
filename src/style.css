@@ -251,6 +251,14 @@ body {
   line-height: 16px;
 }
 
+.board-card:not(.board-card-preview) .board-card-description { color: #d4d4d4; }
+.board-card:not(.board-card-preview) .board-card-dates { color: #b8b8b8; }
+.board-card a.board-card-link { color: #f0f0f0; }
+.board-card a.board-card-link:is(:hover, :focus-visible) { color: #fff; }
+.board-card:not(.board-card-preview) :is(.board-card-dates, .board-card-link) {
+  text-shadow: 0 1px 2px #000c;
+}
+
 [aria-label="Board display"] { margin-top: 12px; }
 [aria-label="Board display"] [aria-pressed="true"] { font-weight: bold; }
 

@@ -737,10 +737,84 @@ main {
   border-bottom: 1px solid var(--divider);
 }
 
-.app-identity { margin-inline-end: auto; }
+.app-identity { flex: 1; min-width: 0; }
 .app-brand { font-weight: 700; letter-spacing: -.025em; }
 .app-breadcrumb-divider { color: var(--muted); }
 .app-header h1 { margin: 0; font-size: inherit; font-weight: 500; }
+.roadmap-name { min-width: 0; }
+.app-header .roadmap-name button,
+.app-header .roadmap-name input {
+  display: block;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: var(--control-height);
+  padding-inline: 6px;
+  font: inherit;
+  color: var(--text);
+}
+.app-header .roadmap-name button {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.roadmap-name input {
+  width: 24ch;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.app-header > :not(.app-identity) { flex-shrink: 0; }
+
+.roadmap-app {
+  display: flex;
+  flex-direction: column;
+}
+.roadmap-app[data-view="Timeline"] {
+  height: 100dvh;
+  min-height: 320px;
+}
+.roadmap-app > :not(#timeline-view),
+#timeline-view > :not([aria-label="Roadmap timeline"]) { flex-shrink: 0; }
+#timeline-view:not([hidden]) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+#timeline-view > [aria-label="Roadmap timeline"] {
+  flex: 1;
+  min-height: 0;
+}
+.app-footer {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space);
+  min-height: 36px;
+  margin-top: auto;
+  border-top: 1px solid var(--divider);
+  color: var(--muted);
+  font-size: 12px;
+}
+.app-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--control-height);
+  color: inherit;
+  text-decoration: none;
+}
+.app-footer a:hover { color: var(--text); }
+
+@media (prefers-reduced-motion: no-preference) {
+  #timeline-view:not([hidden]), .board-view { animation: roadmap-view-in 160ms ease-out; }
+}
+@keyframes roadmap-view-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 .view-tabs { border-bottom: 1px solid var(--divider); }
 
 .app-header button, .workspace-toolbar button, .view-tabs button,

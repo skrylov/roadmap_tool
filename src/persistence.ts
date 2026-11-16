@@ -6,8 +6,10 @@ import { categories, type RoadmapItem } from './prototypeItems';
 
 export const storageKey = 'little-roadmap';
 const version = 1;
+export const roadmapNameLimit = 80;
 
 export type RoadmapSnapshot = {
+  name?: string;
   items: RoadmapItem[];
   markers: Marker[];
   includeWeekends: boolean;
@@ -88,6 +90,7 @@ function readMarker(value: unknown): Marker {
 export function serializeRoadmap(snapshot: RoadmapSnapshot): string {
   return JSON.stringify({
     version,
+    name: snapshot.name,
     items: snapshot.items.map(({ start, end, ...item }) => ({
       ...item, start: start && dateInput(start), end: end && dateInput(end),
     })),
@@ -113,7 +116,9 @@ export function deserializeRoadmap(raw: string): RoadmapSnapshot {
     const orders = items.filter((item) => item.category === category).map((item) => item.order).sort((a, b) => a - b);
     if (orders.some((order, index) => order !== index)) invalid();
   }
-  return { items, markers, includeWeekends, boardMode, view };
+  const name = saved.name === undefined ? undefined : requiredText(saved.name).trim();
+  if (name && name.length > roadmapNameLimit) invalid();
+  return { items, markers, includeWeekends, boardMode, view, ...(name === undefined ? {} : { name }) };
 }
 
 export function loadRoadmap(): { snapshot?: RoadmapSnapshot; warning?: string } {

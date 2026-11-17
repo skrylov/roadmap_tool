@@ -158,17 +158,21 @@ body {
   width: 100%;
   height: 52px;
   box-sizing: border-box;
-  background-color: var(--app-bg);
+  background-color: var(--raised);
   background-image: radial-gradient(ellipse 27% 92% at 0 106%,
-    color-mix(in srgb, var(--board-item-color) 52%, transparent),
-    color-mix(in srgb, var(--board-item-color) 16%, transparent) 48%,
+    color-mix(in srgb, var(--board-item-color) 36%, transparent),
+    color-mix(in srgb, var(--board-item-color) 13%, transparent) 48%,
     transparent 100%);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, var(--muted));
   border-inline-start: 4px solid var(--board-item-color);
   border-radius: var(--radius);
 }
 
-.board-card:not(.board-card-preview):hover { background-color: var(--raised); }
+.board-card:not(.board-card-preview):hover {
+  background-color: var(--hover);
+  border-color: color-mix(in srgb, var(--border) 62%, var(--muted));
+  border-inline-start-color: var(--board-item-color);
+}
 .board-card[data-mode="Detailed"] { height: 132px; }
 .board-card[data-mode="Compact"] .board-card-action { justify-content: center; }
 .board-card[data-mode="Compact"] .board-card-heading { align-items: center; }
@@ -223,7 +227,7 @@ body {
   width: 100%;
   flex-shrink: 0;
   -webkit-line-clamp: 3;
-  color: var(--muted);
+  color: #dedede;
   font-size: 13px;
   line-height: 18px;
   white-space: pre-wrap;
@@ -232,7 +236,7 @@ body {
 .board-card-dates {
   flex-shrink: 0;
   margin-top: auto;
-  color: var(--muted);
+  color: #c6c6c6;
   font-size: 12px;
   line-height: 16px;
   white-space: nowrap;
@@ -252,16 +256,13 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--focus);
+  color: #f0f0f0;
   font-size: 12px;
   line-height: 16px;
 }
 
-.board-card:not(.board-card-preview) .board-card-description { color: #d4d4d4; }
-.board-card:not(.board-card-preview) .board-card-dates { color: #b8b8b8; }
-.board-card a.board-card-link { color: #f0f0f0; }
 .board-card a.board-card-link:is(:hover, :focus-visible) { color: #fff; }
-.board-card:not(.board-card-preview) :is(.board-card-dates, .board-card-link) {
+.board-card :is(.board-card-dates, .board-card-link) {
   text-shadow: 0 1px 2px #000c;
 }
 
@@ -280,7 +281,7 @@ body {
   --board-preview-shadow: 0 5px 14px #0005;
   cursor: grabbing;
   box-shadow: var(--board-preview-shadow);
-  background-color: color-mix(in srgb, var(--app-bg) 94%, transparent);
+  background-color: color-mix(in srgb, var(--raised) 96%, transparent);
   outline: 1px solid color-mix(in srgb, var(--muted) 35%, transparent);
   outline-offset: -1px;
 }
@@ -590,10 +591,11 @@ main {
 }
 
 .board-card[data-editor-selected] {
-  box-shadow: var(--roadmap-selection-ring);
+  --board-selection-ring: inset 0 0 0 1px var(--app-bg), inset 0 0 0 2px var(--muted);
+  box-shadow: var(--board-selection-ring);
 }
 .board-card-preview[data-editor-selected] {
-  box-shadow: var(--roadmap-selection-ring), var(--board-preview-shadow);
+  box-shadow: var(--board-selection-ring), var(--board-preview-shadow);
 }
 
 .roadmap-label:focus-visible {

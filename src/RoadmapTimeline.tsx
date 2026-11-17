@@ -54,31 +54,10 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
   const getInitialItems = useEffectEvent(() => roadmapItems);
   const scrollPosition = useRef(0);
   const [sidebarVisible, setSidebarVisible] = useState(true);
-  const help = useRef<HTMLDivElement>(null);
-  const [helpMode, setHelpMode] = useState<'hover' | 'focus' | 'touch' | null>(null);
-  const helpVisible = helpMode !== null;
   const preview = useDragPreview(container, roadmapItems);
   const { ghost, ghostElement, point, insertion, scrolling } = preview;
   const axisView = useRef<CalendarView>('Month');
   const [selectedView, setSelectedView] = useState<CalendarView | null>('Month');
-
-  useEffect(() => {
-    if (!active || !helpVisible) return;
-    function dismissOutside(event: PointerEvent) {
-      if (event.target instanceof Node && !help.current?.contains(event.target)) setHelpMode(null);
-    }
-    function dismissOnEscape(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return;
-      if (event.target instanceof Node && help.current?.contains(event.target)) event.preventDefault();
-      setHelpMode(null);
-    }
-    document.addEventListener('pointerdown', dismissOutside, true);
-    document.addEventListener('keydown', dismissOnEscape);
-    return () => {
-      document.removeEventListener('pointerdown', dismissOutside, true);
-      document.removeEventListener('keydown', dismissOnEscape);
-    };
-  }, [active, helpVisible]);
 
   useEffect(() => {
     const initialWindow = windowFor('Month', contextDate.current);
@@ -549,26 +528,7 @@ export function RoadmapTimeline({ active, roadmapItems, setRoadmapItems, include
             </button>
           </div>
         </div>
-        <div ref={help} className="timeline-help"
-          onPointerEnter={(event) => { if (event.pointerType === 'mouse') setHelpMode('hover'); }}
-          onPointerLeave={(event) => { if (event.pointerType === 'mouse') setHelpMode(null); }}>
-          <button type="button" className="timeline-help-button" aria-label="Timeline help" aria-describedby="timeline-guidance"
-            onFocus={(event) => { if (event.currentTarget.matches(':focus-visible')) setHelpMode('focus'); }}
-            onBlur={() => setHelpMode(null)}
-            onClick={(event) => {
-              const touch = 'pointerType' in event.nativeEvent && event.nativeEvent.pointerType === 'touch';
-              setHelpMode((current) => touch ? current === 'touch' ? null : 'touch' : current ?? 'focus');
-            }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" aria-hidden="true">
-              <circle cx="8" cy="8" r="6.5" />
-              <path d="M8 7.25v4.25M8 4.5v1" />
-            </svg>
-          </button>
-          <div className="timeline-help-popover" hidden={!helpVisible}>
-            <p id="timeline-guidance" className="workspace-popover" role="tooltip">Drag between rows to reorder. Drop an unscheduled item onto its own timeline row to schedule it. Drag bars sideways to change dates or drag their edges to resize.</p>
-          </div>
-        </div>
-        <div ref={setMarkerToolbar} />
+        <div ref={setMarkerToolbar} className="timeline-marker-toolbar" />
       </div>
       <TimelineMarkers active={active} timeline={markerTimeline} container={container} toolbar={markerToolbar}
         markers={markers} onSave={onSaveMarker} onDelete={onDeleteMarker} />

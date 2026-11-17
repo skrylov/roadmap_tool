@@ -6,6 +6,8 @@ const vite = await createServer({ server: { middlewareMode: true, ws: false }, a
 after(() => vite.close());
 const { serializeRoadmap, deserializeRoadmap } = await vite.ssrLoadModule('/src/persistence.ts');
 const { readBackup, backupLimits } = await vite.ssrLoadModule('/src/backup.ts');
+const { createExampleRoadmap } = await vite.ssrLoadModule('/src/exampleRoadmap.ts');
+const { limits } = await vite.ssrLoadModule('/src/itemDraft.ts');
 
 const empty = { items: [], markers: [], includeWeekends: false, boardMode: 'Detailed', view: 'Timeline' };
 const snapshot = {
@@ -21,6 +23,36 @@ const snapshot = {
   boardMode: 'Compact',
   includeWeekends: true,
 };
+
+test('the example roadmap round trips with its initial view, four colors, and one marker', async () => {
+  const example = createExampleRoadmap(new Date(2027, 1, 28));
+  assert.equal(example.name, 'Example roadmap - rename it here');
+  assert.equal(example.view, 'Timeline');
+  assert.deepEqual(example.items.map(({ category, order, start }) => [category, order, Boolean(start)]),
+    [['Now', 0, true], ['Now', 1, false], ['Next', 0, true], ['Later', 0, false]]);
+  assert.equal(new Set(example.items.map(({ color }) => color)).size, 4);
+  assert.deepEqual(example.markers.map(({ name }) => name), ['Milestone']);
+  assert.ok(example.items[0].description.length <= limits.description);
+  assert.ok(example.items[0].rationale.length <= limits.rationale);
+  assert.deepEqual(await readBackup(new Blob([serializeRoadmap(example)])), example);
+});
+
+test('example bars and marker stay inside the initial local month', () => {
+  for (const year of [2027, 2028]) {
+    for (let month = 0; month < 12; month++) {
+      const start = new Date(year, month, 1);
+      const end = new Date(year, month + 1, 1);
+      for (const today of [start, new Date(year, month + 1, 0)]) {
+        const { items, markers } = createExampleRoadmap(today);
+        for (const { start: first, end: last } of [items[0], items[2]]) {
+          assert.ok(first >= start && last < end && first < last);
+          for (const date of [first, last]) assert.ok(date.getDay() >= 1 && date.getDay() <= 5);
+        }
+        assert.ok(markers[0].date >= start && markers[0].date < end);
+      }
+    }
+  }
+});
 
 test('round trips calendar dates, IDs, ordering, settings, and absent optional fields', () => {
   const raw = serializeRoadmap(snapshot);

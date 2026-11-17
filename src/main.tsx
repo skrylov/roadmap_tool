@@ -6,8 +6,7 @@ import { makeDraft, type ItemDraft, type ItemValues } from './itemDraft';
 import type { RoadmapItem } from './prototypeItems';
 import { Board, type BoardMode } from './Board';
 import { RoadmapTimeline } from './RoadmapTimeline';
-import { windowFor } from './calendarViews';
-import { createPrototypeItems } from './prototypeItems';
+import { createExampleRoadmap } from './exampleRoadmap';
 import { reorderItem } from './reorder';
 import { defaultRoadmapName, loadRoadmap, roadmapNameLimit, saveRoadmap, writeWarning, type RoadmapSnapshot } from './persistence';
 import { downloadBackup } from './backup';
@@ -28,11 +27,11 @@ function normalizeOrder(items: RoadmapItem[]) {
 function App() {
   const [startup] = useState(() => {
     const { snapshot, warning } = loadRoadmap();
-    const initial: RoadmapSnapshot = snapshot ?? {
-      items: createPrototypeItems(windowFor('Month', new Date()).start),
+    const initial: RoadmapSnapshot = snapshot ?? (warning ? {
+      items: [],
       markers: [], includeWeekends: false, boardMode: 'Detailed', view: 'Timeline',
-    };
-    return { initial, warning };
+    } : createExampleRoadmap(new Date()));
+    return { initial, snapshot, warning };
   });
   const [view, setView] = useState(startup.initial.view);
   const [roadmapName, setRoadmapName] = useState(startup.initial.name ?? defaultRoadmapName);
@@ -43,7 +42,7 @@ function App() {
   const [markers, setMarkers] = useState<Marker[]>(startup.initial.markers);
   const [includeWeekends, setIncludeWeekends] = useState(startup.initial.includeWeekends);
   const [storageWarning, setStorageWarning] = useState(startup.warning);
-  const lastSaved = useRef<RoadmapSnapshot | null>(startup.warning ? null : startup.initial);
+  const lastSaved = useRef(startup.snapshot);
   const moreOptions = useRef<HTMLDetailsElement>(null);
   const backupInput = useRef<HTMLInputElement>(null);
   const [backupFile, setBackupFile] = useState<File>();
@@ -61,8 +60,8 @@ function App() {
 
   useEffect(() => {
     const previous = lastSaved.current;
-    if (!previous) return;
-    if (previous.items === items && previous.markers === markers && previous.includeWeekends === includeWeekends &&
+    if (!previous && startup.warning) return;
+    if (previous?.items === items && previous.markers === markers && previous.includeWeekends === includeWeekends &&
       previous.boardMode === boardMode && previous.view === view && (previous.name ?? defaultRoadmapName) === roadmapName) return;
 
     const snapshot = { name: roadmapName, items, markers, includeWeekends, boardMode, view };
@@ -73,7 +72,7 @@ function App() {
     } catch {
       setStorageWarning(writeWarning);
     }
-  }, [items, markers, includeWeekends, boardMode, view, roadmapName]);
+  }, [items, markers, includeWeekends, boardMode, view, roadmapName, startup.warning]);
 
   function finishRename(saveName: boolean, restoreFocus = false) {
     const name = nameDraft?.trim();

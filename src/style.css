@@ -160,8 +160,8 @@ body {
   box-sizing: border-box;
   background-color: var(--app-bg);
   background-image: radial-gradient(ellipse 27% 92% at 0 106%,
-    color-mix(in srgb, var(--board-item-color) 52%, transparent),
-    color-mix(in srgb, var(--board-item-color) 16%, transparent) 48%,
+    color-mix(in srgb, var(--board-item-color) 60%, transparent),
+    color-mix(in srgb, var(--board-item-color) 18%, transparent) 48%,
     transparent 100%);
   border: 1px solid var(--border);
   border-inline-start: 4px solid var(--board-item-color);

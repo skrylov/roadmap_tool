@@ -8,6 +8,7 @@ const { serializeRoadmap, deserializeRoadmap } = await vite.ssrLoadModule('/src/
 const { readBackup, backupLimits } = await vite.ssrLoadModule('/src/backup.ts');
 const { createExampleRoadmap } = await vite.ssrLoadModule('/src/exampleRoadmap.ts');
 const { limits } = await vite.ssrLoadModule('/src/itemDraft.ts');
+const { addDays, isWeekend, sizeDays } = await vite.ssrLoadModule('/src/calendar.ts');
 
 const empty = { items: [], markers: [], includeWeekends: false, boardMode: 'Detailed', view: 'Timeline' };
 const snapshot = {
@@ -28,6 +29,8 @@ test('the example roadmap round trips with its initial view, four colors, and on
   const example = createExampleRoadmap(new Date(2027, 1, 28));
   assert.equal(example.name, 'Example roadmap - rename it here');
   assert.equal(example.view, 'Timeline');
+  assert.ok(example.items.every(({ size }) => size === 'M'));
+  assert.equal(example.items[3].content, '4. Drag to Timeline');
   assert.deepEqual(example.items.map(({ category, order, start }) => [category, order, Boolean(start)]),
     [['Now', 0, true], ['Now', 1, false], ['Next', 0, true], ['Later', 0, false]]);
   assert.equal(new Set(example.items.map(({ color }) => color)).size, 4);
@@ -47,6 +50,11 @@ test('example bars and marker stay inside the initial local month', () => {
         for (const { start: first, end: last } of [items[0], items[2]]) {
           assert.ok(first >= start && last < end && first < last);
           for (const date of [first, last]) assert.ok(date.getDay() >= 1 && date.getDay() <= 5);
+          let workdays = 0;
+          for (let date = first; date < last; date = addDays(date, 1)) {
+            if (!isWeekend(date)) workdays++;
+          }
+          assert.equal(workdays, sizeDays.M);
         }
         assert.ok(markers[0].date >= start && markers[0].date < end);
       }

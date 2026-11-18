@@ -18,6 +18,7 @@ export function createExampleRoadmap(today: Date): RoadmapSnapshot {
     items: [
       {
         id: 'example-readme', content: '1. Hi. READ.ME first', category: 'Now', order: 0, size: 'M', color: purple,
+        link: 'https://skrylov.com',
         ...scheduleRange(firstDay, sizeDays.M, false),
         description: "Last Roadmap is a small, local tool for quickly putting together and visualizing product roadmaps. A simple Now / Next / Later board and a Timeline. Minimal and simple.\n\n"
           + "No accounts, no backend, no setup. Your roadmap is stored in your browser and survives a page refresh. It won't survive clearing site data, though. That's why you can export a JSON backup using the three-dot menu and restore it whenever you need to, including in another browser.\n\n"
